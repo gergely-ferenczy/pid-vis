@@ -31,23 +31,35 @@ function fopdtTf(Kp, Tc, dt, u, processState) {
 }
 
 
-function pid(Kc, Ti, Td, ts, r, y, pidState) {
+function pid(simulationVars, controllerVars, controllerState, r, y) {
+  const { samplingTime: ts } = simulationVars;
+  const { Kc, Ti, Td } = controllerVars;
+  const { ei: ei_prev, y: y_prev } = controllerState;
+
+
   const e = r - y;
-  const ei = pidState.ei + e;
-  const yd = y - pidState.yp;
+  const ei = ei_prev + e;
+  const yd = y - y_prev;
   const p = Kc * e;
   const i = Kc * Ti * ts * ei;
   const d = -Kc * Td / ts * yd;
   const u = p + i + d;
-  pidState.ei = ei;
-  pidState.yp = y;
+  controllerState.ei = ei;
+  controllerState.y = y;
+  controllerState.u = u;
   return { u, p, i, d };
 }
 
 
+const ProcessVariants = [
+  { title: 'First order plus dead time' },
+  { title: 'Second order plus dead time' },
+  { title: 'Water tank level' }
+];
+
+
 function App() {
   const theme = useTheme();
-  console.log(theme);
 
   const [simulationVars, setSimulationVars] = useState({
     simulationTime: 20.0,
@@ -90,7 +102,7 @@ function App() {
   }
 
   function generateControllerData(simulationVars, processVars, controllerVars) {
-    const pidState = { ei: 0, yp: 0, up: 0 };
+    const controllerState = { ei: 0, y: 0, u: 0 };
 
     const { simulationTime: st, samplingTime: dt } = simulationVars;
     const { gain: pG, delay: pD, y0, timeConstant: pTc } = processVars;
@@ -106,10 +118,11 @@ function App() {
     const processResponse = Array(ticks.length);
 
     ticks.map((t, k) => {
-      const y = fopdtTf(pG, pTc, dt, pidState.up, processState);
+      const y = fopdtTf(pG, pTc, dt, controllerState.u, processState);
 
-      const {u, p, i, d} = pid(Kc, Ti, Td, dt, step(t, simulationVars.stepReturn, simulationVars.stepTime), y, pidState);
-      pidState.up = u;
+      const referenceInput = step(t, simulationVars.stepReturn, simulationVars.stepTime);
+      const {u, p, i, d} = pid(simulationVars, controllerVars, controllerState, referenceInput, y);
+      console.log(controllerState);
 
       targetReference[k] = { x: t, y: step(t, simulationVars.stepReturn, simulationVars.stepTime) };
       controllerOutput[k] = { x: t, y: u };
@@ -259,11 +272,15 @@ function App() {
     updateData(simulationVars, processVars, newControllerVars);
   }
 
-  const [anchorSimConfigAction, setAnchorSimConfigAction] = useState(null);
-  const open = Boolean(anchorSimConfigAction);
+  const [anchorElProcessConfig, setAnchorSimConfigAction] = useState(null);
+  const processConfigOpen = Boolean(anchorElProcessConfig);
 
-  function handleSimConfigAction(event) {
+  function handleProcessConfigOpen(event) {
     setAnchorSimConfigAction(event.currentTarget);
+  }
+
+  function handleProcessConfigClose() {
+    setAnchorSimConfigAction(null);
   }
 
   return (
@@ -284,9 +301,6 @@ function App() {
         }}>
           <Card>
             <CardHeader
-              action={
-                <IconButton onClick={handleSimConfigAction}><MoreVertIcon /></IconButton>
-              }
               title={<Typography>Simulation configuration</Typography>}
             />
             <CardContent>
@@ -307,16 +321,11 @@ function App() {
                 <InputSlider min={0.01} max={100.0} step={0.01} value={simulationVars.stepTime} disabled={!simulationVars.stepReturn} onChange={onStepTimeChange} />
               </Box>
             </CardContent>
-            <Menu anchorEl={anchorSimConfigAction} open={open}>
-              <MenuItem>Profile</MenuItem>
-              <MenuItem>My account</MenuItem>
-              <MenuItem>Logout</MenuItem>
-            </Menu>
           </Card>
           <Card>
             <CardHeader
               action={
-                <IconButton><MoreVertIcon /></IconButton>
+                <IconButton onClick={handleProcessConfigOpen}><MoreVertIcon /></IconButton>
               }
               title={<Typography>Process configuration</Typography>}
             />
@@ -333,10 +342,8 @@ function App() {
                 <InputSlider min={0.0} max={10.0} step={0.1} value={processVars.delay} onChange={onProcessDelayChange} />
               </Box>
             </CardContent>
-            <Menu>
-              <MenuItem>Profile</MenuItem>
-              <MenuItem>My account</MenuItem>
-              <MenuItem>Logout</MenuItem>
+            <Menu anchorEl={anchorElProcessConfig} open={processConfigOpen} onClose={handleProcessConfigClose} >
+              { ProcessVariants.map((p, i) => <MenuItem key={i}>{p.title}</MenuItem>) }
             </Menu>
           </Card>
           <Card>
