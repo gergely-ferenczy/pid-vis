@@ -5,7 +5,7 @@ import { CssBaseline, Paper, Box, Typography, IconButton, Divider, Card, CardHea
          Menu, MenuItem, FormControlLabel, Checkbox } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { InfoOutlined as InfoIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
-import Plotter2 from "./Plotter2";
+import Plotter2 from "./Plotter";
 import InputSlider from './InputSlider';
 
 import '@fontsource/roboto/300.css';
