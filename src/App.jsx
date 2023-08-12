@@ -49,7 +49,7 @@ function App() {
   const theme = useTheme();
   console.log(theme);
 
-  const [globalVars, setGlobalVars] = useState({
+  const [simulationVars, setSimulationVars] = useState({
     simulationTime: 20.0,
     samplingTime: 0.1,
     stepTime: 10.0,
@@ -68,11 +68,11 @@ function App() {
     Td: 0.0
   });
 
-  const [processData, setProcessData] = useState(generateProcessData(globalVars, processVars));
-  const [controllerData, setControllerData] = useState(generateControllerData(globalVars, processVars, controllerVars));
+  const [processData, setProcessData] = useState(generateProcessData(simulationVars, processVars));
+  const [controllerData, setControllerData] = useState(generateControllerData(simulationVars, processVars, controllerVars));
 
-  function generateProcessData(globalVars, processVars) {
-    const { simulationTime: st, samplingTime: dt } = globalVars;
+  function generateProcessData(simulationVars, processVars) {
+    const { simulationTime: st, samplingTime: dt } = simulationVars;
     const { gain: pG, delay: pD, timeConstant: pTc } = processVars;
     const ticks =  Array(Math.round((1.05 * st)/dt + 1)).fill().map((_, i) => -0.05 * st + dt * i);
     const processState = { ua: Array(Math.floor(pD / dt) + 2).fill(0), yp: 0.0 };
@@ -81,18 +81,18 @@ function App() {
       title: 'Open loop response',
       limits: { min: ticks[0], max: ticks[ticks.length] },
       datasets: [
-        { label: 'Input', data: ticks.map((t) => ({x: t, y: step(t, globalVars.stepReturn, globalVars.stepTime)})) },
-        { label: 'Response', data: ticks.map((t) => ({x: t, y: fopdtTf(pG, pTc, dt, step(t, globalVars.stepReturn, globalVars.stepTime), processState)})) }
+        { label: 'Input', data: ticks.map((t) => ({x: t, y: step(t, simulationVars.stepReturn, simulationVars.stepTime)})) },
+        { label: 'Response', data: ticks.map((t) => ({x: t, y: fopdtTf(pG, pTc, dt, step(t, simulationVars.stepReturn, simulationVars.stepTime), processState)})) }
       ]
     };
 
     return result;
   }
 
-  function generateControllerData(globalVars, processVars, controllerVars) {
+  function generateControllerData(simulationVars, processVars, controllerVars) {
     const pidState = { ei: 0, yp: 0, up: 0 };
 
-    const { simulationTime: st, samplingTime: dt } = globalVars;
+    const { simulationTime: st, samplingTime: dt } = simulationVars;
     const { gain: pG, delay: pD, y0, timeConstant: pTc } = processVars;
     const { Kc, Ti, Td } = controllerVars;
     const ticks =  Array(Math.floor(st/dt)).fill().map((_, i) => -0.05 * st + dt * i);
@@ -108,10 +108,10 @@ function App() {
     ticks.map((t, k) => {
       const y = fopdtTf(pG, pTc, dt, pidState.up, processState);
 
-      const {u, p, i, d} = pid(Kc, Ti, Td, dt, step(t, globalVars.stepReturn, globalVars.stepTime), y, pidState);
+      const {u, p, i, d} = pid(Kc, Ti, Td, dt, step(t, simulationVars.stepReturn, simulationVars.stepTime), y, pidState);
       pidState.up = u;
 
-      targetReference[k] = { x: t, y: step(t, globalVars.stepReturn, globalVars.stepTime) };
+      targetReference[k] = { x: t, y: step(t, simulationVars.stepReturn, simulationVars.stepTime) };
       controllerOutput[k] = { x: t, y: u };
       processResponse[k] = { x: t, y: y };
       pOutput[k] = { x: t, y: p };
@@ -135,45 +135,45 @@ function App() {
     return result;
   }
 
-  function updateData(globalVars, processVars, controllerVars) {
-    setProcessData(generateProcessData(globalVars, processVars));
-    setControllerData(generateControllerData(globalVars, processVars, controllerVars));
+  function updateData(simulationVars, processVars, controllerVars) {
+    setProcessData(generateProcessData(simulationVars, processVars));
+    setControllerData(generateControllerData(simulationVars, processVars, controllerVars));
   }
 
   function onSimulationTimeChange(event, newValue) {
-    let newGlobalVars = {
-      ...globalVars,
+    let newSimulationVars = {
+      ...simulationVars,
       simulationTime: newValue
     };
-    setGlobalVars(newGlobalVars);
-    updateData(newGlobalVars, processVars, controllerVars);
+    setSimulationVars(newSimulationVars);
+    updateData(newSimulationVars, processVars, controllerVars);
   }
 
   function onSamplingTimeChange(event, newValue) {
-    let newGlobalVars = {
-      ...globalVars,
+    let newSimulationVars = {
+      ...simulationVars,
       samplingTime: newValue
     };
-    setGlobalVars(newGlobalVars);
-    updateData(newGlobalVars, processVars, controllerVars);
+    setSimulationVars(newSimulationVars);
+    updateData(newSimulationVars, processVars, controllerVars);
   }
 
   function onStepTimeChange(event, newValue) {
-    let newGlobalVars = {
-      ...globalVars,
+    let newSimulationVars = {
+      ...simulationVars,
       stepTime: newValue
     };
-    setGlobalVars(newGlobalVars);
-    updateData(newGlobalVars, processVars, controllerVars);
+    setSimulationVars(newSimulationVars);
+    updateData(newSimulationVars, processVars, controllerVars);
   }
 
   function onStepReturnChange(event, newValue) {
-    let newGlobalVars = {
-      ...globalVars,
+    let newSimulationVars = {
+      ...simulationVars,
       stepReturn: newValue
     };
-    setGlobalVars(newGlobalVars);
-    updateData(newGlobalVars, processVars, controllerVars);
+    setSimulationVars(newSimulationVars);
+    updateData(newSimulationVars, processVars, controllerVars);
   }
 
   function onProcessGainChange(event, newValue) {
@@ -182,7 +182,7 @@ function App() {
       gain: newValue
     };
     setProcessVars(newProcessVars);
-    updateData(globalVars, newProcessVars, controllerVars);
+    updateData(simulationVars, newProcessVars, controllerVars);
   }
 
   function onProcessTimeConstantChange(event, newValue) {
@@ -192,7 +192,7 @@ function App() {
     };
     setProcessVars(newProcessVars);
     console.log(controllerVars);
-    updateData(globalVars, newProcessVars, controllerVars);
+    updateData(simulationVars, newProcessVars, controllerVars);
   }
 
   function onProcessDelayChange(event, newValue) {
@@ -201,7 +201,7 @@ function App() {
       delay: newValue
     };
     setProcessVars(newProcessVars);
-    updateData(globalVars, newProcessVars, controllerVars);
+    updateData(simulationVars, newProcessVars, controllerVars);
   }
 
   function onKcChange(event, newValue) {
@@ -210,7 +210,7 @@ function App() {
       Kc: newValue
     };
     setControllerVars(newControllerVars);
-    updateData(globalVars, processVars, newControllerVars);
+    updateData(simulationVars, processVars, newControllerVars);
   }
 
   function onTiChange(event, newValue) {
@@ -219,7 +219,7 @@ function App() {
       Ti: newValue
     };
     setControllerVars(newControllerVars);
-    updateData(globalVars, processVars, newControllerVars);
+    updateData(simulationVars, processVars, newControllerVars);
   }
 
   function onTdChange(event, newValue) {
@@ -228,7 +228,7 @@ function App() {
       Td: newValue
     };
     setControllerVars(newControllerVars);
-    updateData(globalVars, processVars, newControllerVars);
+    updateData(simulationVars, processVars, newControllerVars);
   }
 
   function onKpChange(event, newValue) {
@@ -238,7 +238,7 @@ function App() {
       Td: controllerVars.Kc * controllerVars.Td / newValue
     };
     setControllerVars(newControllerVars);
-    updateData(globalVars, processVars, newControllerVars);
+    updateData(simulationVars, processVars, newControllerVars);
   }
 
   function onKiChange(event, newValue) {
@@ -247,7 +247,7 @@ function App() {
       Ti: newValue / controllerVars.Kc
     };
     setControllerVars(newControllerVars);
-    updateData(globalVars, processVars, newControllerVars);
+    updateData(simulationVars, processVars, newControllerVars);
   }
 
   function onKdChange(event, newValue) {
@@ -256,7 +256,7 @@ function App() {
       Td: newValue / controllerVars.Kc
     };
     setControllerVars(newControllerVars);
-    updateData(globalVars, processVars, newControllerVars);
+    updateData(simulationVars, processVars, newControllerVars);
   }
 
   const [anchorSimConfigAction, setAnchorSimConfigAction] = useState(null);
@@ -295,16 +295,16 @@ function App() {
                 gridTemplateColumns: 'min-content 1fr'
               }}>
                 <Box><InlineMath>t_&#123;sim&#125;</InlineMath></Box>
-                <InputSlider min={0.1} max={100.0} step={0.1} value={globalVars.simulationTime} onChange={onSimulationTimeChange} />
+                <InputSlider min={0.1} max={100.0} step={0.1} value={simulationVars.simulationTime} onChange={onSimulationTimeChange} />
                 <Box><InlineMath>t_&#123;sample&#125;</InlineMath></Box>
-                <InputSlider min={0.01} max={1.0} step={0.01} value={globalVars.samplingTime} onChange={onSamplingTimeChange} />
+                <InputSlider min={0.01} max={1.0} step={0.01} value={simulationVars.samplingTime} onChange={onSamplingTimeChange} />
                 <Box>
                   <FormControlLabel
-                    control={<Checkbox checked={globalVars.stepReturn} onChange={onStepReturnChange} />}
+                    control={<Checkbox checked={simulationVars.stepReturn} onChange={onStepReturnChange} />}
                     label={<InlineMath>t_&#123;step&#125;</InlineMath>}
                   />
                 </Box>
-                <InputSlider min={0.01} max={100.0} step={0.01} value={globalVars.stepTime} disabled={!globalVars.stepReturn} onChange={onStepTimeChange} />
+                <InputSlider min={0.01} max={100.0} step={0.01} value={simulationVars.stepTime} disabled={!simulationVars.stepReturn} onChange={onStepTimeChange} />
               </Box>
             </CardContent>
             <Menu anchorEl={anchorSimConfigAction} open={open}>
