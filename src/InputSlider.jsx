@@ -22,25 +22,23 @@ export default function InputSlider(props) {
   };
 
   return (
-      <Box sx={{
-        display: 'grid',
-        gridTemplateColumns: 'auto 100px',
-        padding: theme.spacing(),
-        columnGap: theme.spacing(2),
-        ...props.sx
-      }}>
-        <Slider size="small" min={props.min} max={props.max} step={props.step} value={props.value} onChange={props.onChange} />
-        <Input
-          value={props.value}
-          size="small"
-          onChange={handleInputChange}
-          inputProps={{
-            step: props.step || 1,
-            min: props.min || 0,
-            max: props.max || 100,
-            type: 'number'
-          }}
-        />
-      </Box>
+    <Box sx={{
+      display: 'grid',
+      gridTemplateColumns: 'auto 100px',
+      padding: theme.spacing(),
+      columnGap: theme.spacing(2),
+      ...props.sx
+    }}>
+      <Slider size="small" min={props.min} max={props.max} step={props.step} value={props.value}
+        disabled={props.disabled} onChange={props.onChange} />
+      <Input value={props.value} size="small" disabled={props.disabled} onChange={handleInputChange}
+        inputProps={{
+          step: props.step || 1,
+          min: props.min || 0,
+          max: props.max || 100,
+          type: 'number'
+        }}
+      />
+    </Box>
   );
 }

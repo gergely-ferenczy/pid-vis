@@ -2,7 +2,7 @@ import { useState } from "react";
 import 'katex/dist/katex.min.css';
 import { InlineMath } from 'react-katex';
 import { CssBaseline, Paper, Box, Typography, IconButton, Divider, Card, CardHeader, CardContent,
-         Menu, MenuItem } from '@mui/material';
+         Menu, MenuItem, FormControlLabel, Checkbox } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { InfoOutlined as InfoIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
 import Plotter2 from "./Plotter2";
@@ -13,15 +13,15 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 
-function step(t) {
-  return t > 0.0 ? 1.0 : 0.0;
+function step(t, rt, st) {
+  return t > 0.0 && (!rt || t < st) ? 1.0 : 0.0;
 }
 
 function fopdtTf(Kp, Tc, dt, u, processState) {
   const ua = processState.ua;
   ua.splice(0, 1);
   ua.push(u);
-  
+
   const yp = processState.yp;
   let y = 1 / (2 * Tc + dt) * (Kp * dt * (ua[0] + ua[1]) - (dt - 2 * Tc) * yp);
 
@@ -50,16 +50,18 @@ function App() {
   console.log(theme);
 
   const [globalVars, setGlobalVars] = useState({
-    simulationTime: 10.0,
-    samplingTime: 0.1
+    simulationTime: 20.0,
+    samplingTime: 0.1,
+    stepTime: 10.0,
+    stepReturn: false
   });
-  
+
   const [processVars, setProcessVars] = useState({
     gain: 1.0,
     timeConstant: 0.6,
     delay: 1.0,
   });
-  
+
   const [controllerVars, setControllerVars] = useState({
     Kc: 0.4,
     Ti: 1.3,
@@ -79,8 +81,8 @@ function App() {
       title: 'Open loop response',
       limits: { min: ticks[0], max: ticks[ticks.length] },
       datasets: [
-        { label: 'Input', data: ticks.map((t) => ({x: t, y: step(t)})) },
-        { label: 'Response', data: ticks.map((t) => ({x: t, y: fopdtTf(pG, pTc, dt, step(t), processState)})) }
+        { label: 'Input', data: ticks.map((t) => ({x: t, y: step(t, globalVars.stepReturn, globalVars.stepTime)})) },
+        { label: 'Response', data: ticks.map((t) => ({x: t, y: fopdtTf(pG, pTc, dt, step(t, globalVars.stepReturn, globalVars.stepTime), processState)})) }
       ]
     };
 
@@ -106,10 +108,10 @@ function App() {
     ticks.map((t, k) => {
       const y = fopdtTf(pG, pTc, dt, pidState.up, processState);
 
-      const {u, p, i, d} = pid(Kc, Ti, Td, dt, step(t), y, pidState);
+      const {u, p, i, d} = pid(Kc, Ti, Td, dt, step(t, globalVars.stepReturn, globalVars.stepTime), y, pidState);
       pidState.up = u;
-      
-      targetReference[k] = { x: t, y: step(t) };
+
+      targetReference[k] = { x: t, y: step(t, globalVars.stepReturn, globalVars.stepTime) };
       controllerOutput[k] = { x: t, y: u };
       processResponse[k] = { x: t, y: y };
       pOutput[k] = { x: t, y: p };
@@ -145,7 +147,7 @@ function App() {
     };
     setGlobalVars(newGlobalVars);
     updateData(newGlobalVars, processVars, controllerVars);
-  } 
+  }
 
   function onSamplingTimeChange(event, newValue) {
     let newGlobalVars = {
@@ -154,7 +156,25 @@ function App() {
     };
     setGlobalVars(newGlobalVars);
     updateData(newGlobalVars, processVars, controllerVars);
-  } 
+  }
+
+  function onStepTimeChange(event, newValue) {
+    let newGlobalVars = {
+      ...globalVars,
+      stepTime: newValue
+    };
+    setGlobalVars(newGlobalVars);
+    updateData(newGlobalVars, processVars, controllerVars);
+  }
+
+  function onStepReturnChange(event, newValue) {
+    let newGlobalVars = {
+      ...globalVars,
+      stepReturn: newValue
+    };
+    setGlobalVars(newGlobalVars);
+    updateData(newGlobalVars, processVars, controllerVars);
+  }
 
   function onProcessGainChange(event, newValue) {
     let newProcessVars = {
@@ -239,6 +259,13 @@ function App() {
     updateData(globalVars, processVars, newControllerVars);
   }
 
+  const [anchorSimConfigAction, setAnchorSimConfigAction] = useState(null);
+  const open = Boolean(anchorSimConfigAction);
+
+  function handleSimConfigAction(event) {
+    setAnchorSimConfigAction(event.currentTarget);
+  }
+
   return (
     <>
       <CssBaseline />
@@ -257,10 +284,13 @@ function App() {
         }}>
           <Card>
             <CardHeader
+              action={
+                <IconButton onClick={handleSimConfigAction}><MoreVertIcon /></IconButton>
+              }
               title={<Typography>Simulation configuration</Typography>}
             />
             <CardContent>
-              <Box sx={{ 
+              <Box sx={{
                 display: 'grid',
                 gridTemplateColumns: 'min-content 1fr'
               }}>
@@ -268,8 +298,20 @@ function App() {
                 <InputSlider min={0.1} max={100.0} step={0.1} value={globalVars.simulationTime} onChange={onSimulationTimeChange} />
                 <Box><InlineMath>t_&#123;sample&#125;</InlineMath></Box>
                 <InputSlider min={0.01} max={1.0} step={0.01} value={globalVars.samplingTime} onChange={onSamplingTimeChange} />
+                <Box>
+                  <FormControlLabel
+                    control={<Checkbox checked={globalVars.stepReturn} onChange={onStepReturnChange} />}
+                    label={<InlineMath>t_&#123;step&#125;</InlineMath>}
+                  />
+                </Box>
+                <InputSlider min={0.01} max={100.0} step={0.01} value={globalVars.stepTime} disabled={!globalVars.stepReturn} onChange={onStepTimeChange} />
               </Box>
             </CardContent>
+            <Menu anchorEl={anchorSimConfigAction} open={open}>
+              <MenuItem>Profile</MenuItem>
+              <MenuItem>My account</MenuItem>
+              <MenuItem>Logout</MenuItem>
+            </Menu>
           </Card>
           <Card>
             <CardHeader
@@ -279,7 +321,7 @@ function App() {
               title={<Typography>Process configuration</Typography>}
             />
             <CardContent>
-              <Box sx={{ 
+              <Box sx={{
                 display: 'grid',
                 gridTemplateColumns: 'min-content 1fr'
               }}>
@@ -302,7 +344,7 @@ function App() {
               title={<Typography>Controller configuration</Typography>}
             />
             <CardContent>
-              <Box sx={{ 
+              <Box sx={{
                 display: 'grid',
                 gridTemplateColumns: 'min-content 1fr'
               }}>
@@ -337,65 +379,6 @@ function App() {
           <Plotter2 data={controllerData} />
         </Box>
       </Box>
-
-
-
-      {/* <Box sx={{
-        display: 'grid',
-        gridTemplateColumns: 'min-content 1fr'
-      }}>
-        <Box sx={{
-          display: 'grid',
-          gridTemplateAreas: `'t1 s1' 't2 s2'
-                              't3 s3' 't4 s4' 't5 s5'
-                              't6 s6' 't7 s7' 't8 s8' 'd d' 't9 s9' 't10 s10' 't11 s11'`,
-          gridTemplateColumns: 'max-content 400px',
-          alignContent: 'start',
-          alignItems: 'center',
-          gap: 1,
-          padding: 1
-        }}>
-          <Paper sx={{ gridArea: 't1-start / t1-start / s2-end / s2-end', alignSelf: 'stretch' }} />
-          <Paper sx={{ gridArea: 't3-start / t3-start / s5-end / s5-end', alignSelf: 'stretch' }} />
-          <Paper sx={{ gridArea: 't6-start / t6-start / s11-end / s11-end', alignSelf: 'stretch' }} />
-
-          <Box sx={{ gridArea: 't1' }}><InlineMath>t_&#123;sim&#125;</InlineMath></Box>
-          <InputSlider sx={{ gridArea: 's1' }} min={0.1} max={100.0} step={0.1} value={globalVars.simulationTime} onChange={onSimulationTimeChange} />
-          <Box sx={{ gridArea: 't2' }}><InlineMath>t_&#123;sample&#125;</InlineMath></Box>
-          <InputSlider sx={{ gridArea: 's2' }} min={0.01} max={1.0} step={0.01} value={globalVars.samplingTime} onChange={onSamplingTimeChange} />
-
-          <Box sx={{ gridArea: 't3' }}><InlineMath>K_p</InlineMath></Box>
-          <InputSlider sx={{ gridArea: 's3' }} min={0.1} max={10.0} step={0.1} value={processVars.gain} onChange={onProcessGainChange} />
-          <Box sx={{ gridArea: 't4' }}><InlineMath>\tau_p</InlineMath></Box>
-          <InputSlider sx={{ gridArea: 's4' }} min={0.0} max={10.0} step={0.1} value={processVars.timeConstant} onChange={onProcessTimeConstantChange} />
-          <Box sx={{ gridArea: 't5' }}><InlineMath>\theta_p</InlineMath></Box>
-          <InputSlider sx={{ gridArea: 's5' }} min={0.0} max={10.0} step={0.1} value={processVars.delay} onChange={onProcessDelayChange} />
-
-          <Box sx={{ gridArea: 't6' }}><InlineMath>K_c</InlineMath></Box>
-          <InputSlider sx={{ gridArea: 's6' }} min={0.1} max={10.0} step={0.1} value={controllerVars.Kc} onChange={onKcChange} />
-          <Box sx={{ gridArea: 't7' }}><InlineMath>\tau_i</InlineMath></Box>
-          <InputSlider sx={{ gridArea: 's7' }} min={0.0} max={10.0} step={0.1} value={controllerVars.Ti} onChange={onTiChange} />
-          <Box sx={{ gridArea: 't8' }}><InlineMath>\tau_d</InlineMath></Box>
-          <InputSlider sx={{ gridArea: 's8' }} min={0.0} max={10.0} step={0.1} value={controllerVars.Td} onChange={onTdChange} />
-          <Divider sx={{ gridArea: 'd' }} />
-          <Box sx={{ gridArea: 't9' }}><InlineMath>K_p</InlineMath></Box>
-          <InputSlider sx={{ gridArea: 's9' }} min={0.1} max={10.0} step={0.1} value={controllerVars.Kc} onChange={onKpChange} />
-          <Box sx={{ gridArea: 't10' }}><InlineMath>K_i</InlineMath></Box>
-          <InputSlider sx={{ gridArea: 's10' }} min={0.0} max={10.0 * controllerVars.Kc} step={0.1} value={controllerVars.Ti * controllerVars.Kc} onChange={onKiChange} />
-          <Box sx={{ gridArea: 't11' }}><InlineMath>K_d</InlineMath></Box>
-          <InputSlider sx={{ gridArea: 's11' }} min={0.0} max={10.0 * controllerVars.Kc} step={0.1} value={controllerVars.Td * controllerVars.Kc} onChange={onKdChange} />
-        </Box>
-        <Box sx={{
-          display: 'grid',
-          gridTemplateRows: '1fr 1fr',
-          gridTemplateColumns: '600px',
-          alignContent: 'start',
-          overflow: 'hidden'
-        }}>
-          <Plotter2 data={processData} />
-          <Plotter2 data={controllerData} />
-        </Box>
-      </Box> */}
     </>
   );
 }
