@@ -2,7 +2,7 @@ import { useState } from "react";
 import 'katex/dist/katex.min.css';
 import { InlineMath } from 'react-katex';
 import { CssBaseline, Box, Typography, IconButton, Divider, Card, CardHeader, CardContent,
-         Menu, MenuItem, FormControlLabel, Checkbox } from '@mui/material';
+         Menu, MenuItem, FormControlLabel, Checkbox, Input } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { InfoOutlined as InfoIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
 import Plotter2 from "./Plotter";
@@ -31,7 +31,7 @@ function pid(simulationParams, controllerParams, controllerState, r, y) {
   const p = Kc * e;
   const i = Kc * Ti * ts * ei;
   const d = -Kc * Td / ts * yd;
-  const u = p + i + d;
+  const u = Math.min(Math.max(p + i + d, controllerParams.u_min), controllerParams.u_max);
   controllerState.ei = ei;
   controllerState.y = y;
   controllerState.u = u;
@@ -52,19 +52,15 @@ function App() {
     stepReturn: false
   });
 
-  const [controllerParams, setControllerParams] = useState({
-    Kc: 0.4,
-    Ti: 1.3,
-    Td: 0.0
-  });
-
   const [processId, setProcessId] = useState(0);
-  const [processParams, setProcessParams] = useState(ProcessVariants[0].defaultParams);
+  const [processParams, setProcessParams] = useState(ProcessVariants[processId].defaultParams);
 
-  const [processData, setProcessData] = useState(generateProcessData(simulationParams, processParams));
-  const [controllerData, setControllerData] = useState(generateControllerData(simulationParams, processParams, controllerParams));
+  const [controllerParams, setControllerParams] = useState(processParams.control);
 
-  function generateProcessData(simulationParams, processParams) {
+  const [processData, setProcessData] = useState(generateProcessData(simulationParams, processId, processParams));
+  const [controllerData, setControllerData] = useState(generateControllerData(simulationParams, processId, processParams, controllerParams));
+
+  function generateProcessData(simulationParams, processId, processParams) {
     const { simulationTime: st, samplingTime: dt } = simulationParams;
     const ticks =  Array(Math.round((1.05 * st)/dt + 1)).fill().map((_, i) => -0.05 * st + dt * i);
     const stepData = ticks.map((t) => ({x: t, y: step(t, simulationParams.stepReturn, simulationParams.stepTime)}));
@@ -83,7 +79,7 @@ function App() {
     return result;
   }
 
-  function generateControllerData(simulationParams, processParams, controllerParams) {
+  function generateControllerData(simulationParams, processId, processParams, controllerParams) {
     const controllerState = { ei: 0, y: 0, u: 0 };
 
     const { simulationTime: st, samplingTime: dt } = simulationParams;
@@ -127,9 +123,9 @@ function App() {
     return result;
   }
 
-  function updateData(simulationParams, processParams, controllerParams) {
-    setProcessData(generateProcessData(simulationParams, processParams));
-    setControllerData(generateControllerData(simulationParams, processParams, controllerParams));
+  function updateData(simulationParams, processId, processParams, controllerParams) {
+    setProcessData(generateProcessData(simulationParams, processId, processParams));
+    setControllerData(generateControllerData(simulationParams, processId, processParams, controllerParams));
   }
 
   function onSimulationTimeChange(event, newValue) {
@@ -138,7 +134,7 @@ function App() {
       simulationTime: newValue
     };
     setSimulationParams(newSimulationParams);
-    updateData(newSimulationParams, processParams, controllerParams);
+    updateData(newSimulationParams, processId, processParams, controllerParams);
   }
 
   function onSamplingTimeChange(event, newValue) {
@@ -147,7 +143,7 @@ function App() {
       samplingTime: newValue
     };
     setSimulationParams(newSimulationParams);
-    updateData(newSimulationParams, processParams, controllerParams);
+    updateData(newSimulationParams, processId, processParams, controllerParams);
   }
 
   function onStepTimeChange(event, newValue) {
@@ -156,7 +152,7 @@ function App() {
       stepTime: newValue
     };
     setSimulationParams(newSimulationParams);
-    updateData(newSimulationParams, processParams, controllerParams);
+    updateData(newSimulationParams, processId, processParams, controllerParams);
   }
 
   function onStepReturnChange(event, newValue) {
@@ -165,7 +161,7 @@ function App() {
       stepReturn: newValue
     };
     setSimulationParams(newSimulationParams);
-    updateData(newSimulationParams, processParams, controllerParams);
+    updateData(newSimulationParams, processId, processParams, controllerParams);
   }
 
   function onKcChange(event, newValue) {
@@ -174,7 +170,7 @@ function App() {
       Kc: newValue
     };
     setControllerParams(newControllerParams);
-    updateData(simulationParams, processParams, newControllerParams);
+    updateData(simulationParams, processId, processParams, newControllerParams);
   }
 
   function onTiChange(event, newValue) {
@@ -183,7 +179,7 @@ function App() {
       Ti: newValue
     };
     setControllerParams(newControllerParams);
-    updateData(simulationParams, processParams, newControllerParams);
+    updateData(simulationParams, processId, processParams, newControllerParams);
   }
 
   function onTdChange(event, newValue) {
@@ -192,7 +188,7 @@ function App() {
       Td: newValue
     };
     setControllerParams(newControllerParams);
-    updateData(simulationParams, processParams, newControllerParams);
+    updateData(simulationParams, processId, processParams, newControllerParams);
   }
 
   function onKpChange(event, newValue) {
@@ -202,7 +198,7 @@ function App() {
       Td: controllerParams.Kc * controllerParams.Td / newValue
     };
     setControllerParams(newControllerParams);
-    updateData(simulationParams, processParams, newControllerParams);
+    updateData(simulationParams, processId, processParams, newControllerParams);
   }
 
   function onKiChange(event, newValue) {
@@ -211,7 +207,7 @@ function App() {
       Ti: newValue / controllerParams.Kc
     };
     setControllerParams(newControllerParams);
-    updateData(simulationParams, processParams, newControllerParams);
+    updateData(simulationParams, processId, processParams, newControllerParams);
   }
 
   function onKdChange(event, newValue) {
@@ -220,14 +216,34 @@ function App() {
       Td: newValue / controllerParams.Kc
     };
     setControllerParams(newControllerParams);
-    updateData(simulationParams, processParams, newControllerParams);
+    updateData(simulationParams, processId, processParams, newControllerParams);
+  }
+
+  function onUminChange(event) {
+    let newValue = event.target.value === '' ? 0 : Number(event.target.value);
+    const newControllerParams = {
+      ...controllerParams,
+      u_min: newValue
+    };
+    setControllerParams(newControllerParams);
+    updateData(simulationParams, processId, processParams, newControllerParams);
+  }
+
+  function onUmaxChange(event) {
+    let newValue = event.target.value === '' ? 0 : Number(event.target.value);
+    const newControllerParams = {
+      ...controllerParams,
+      u_max: newValue
+    };
+    setControllerParams(newControllerParams);
+    updateData(simulationParams, processId, processParams, newControllerParams);
   }
 
   function onProcessVarChange(paramId, newValue) {
     let newProcessParams = { ...processParams };
     newProcessParams[paramId] = newValue;
     setProcessParams(newProcessParams);
-    updateData(simulationParams, newProcessParams, controllerParams);
+    updateData(simulationParams, processId, newProcessParams, controllerParams);
   }
 
   const [anchorElProcessConfig, setAnchorSimConfigAction] = useState(null);
@@ -237,8 +253,17 @@ function App() {
     setAnchorSimConfigAction(event.currentTarget);
   }
 
-  function handleProcessConfigClose() {
+  function handleProcessConfigClose(newProcessId) {
     setAnchorSimConfigAction(null);
+
+    if (newProcessId !== undefined) {
+      const newProcessParams = ProcessVariants[newProcessId].defaultParams;
+      const newControllerParams = newProcessParams.control;
+      updateData(simulationParams, newProcessId, newProcessParams, newControllerParams);
+      setProcessId(newProcessId);
+      setProcessParams(newProcessParams);
+      setControllerParams(newControllerParams);
+    }
   }
 
   return (
@@ -264,7 +289,9 @@ function App() {
             <CardContent>
               <Box sx={{
                 display: 'grid',
-                gridTemplateColumns: 'min-content 1fr'
+                gridTemplateColumns: 'min-content 1fr',
+                columnGap: 1,
+                alignItems: 'center'
               }}>
                 <Box><InlineMath>t_&#123;sim&#125;</InlineMath></Box>
                 <InputSlider min={0.1} max={100.0} step={0.1} value={simulationParams.simulationTime} onChange={onSimulationTimeChange} />
@@ -290,20 +317,22 @@ function App() {
             <CardContent>
               <Box sx={{
                 display: 'grid',
-                gridTemplateColumns: 'min-content 1fr'
+                gridTemplateColumns: 'min-content 1fr',
+                columnGap: 1,
+                alignItems: 'center'
               }}>
                 {
                   ProcessVariants[processId].paramDefinitions.map((p) => (
                     <Box key={p.name} sx={{ display: 'contents' }}>
                       <Box><InlineMath>{p.title}</InlineMath></Box>
-                      <InputSlider min={0.1} max={10.0} step={0.1} value={processParams[p.name]} onChange={(e, v) => { onProcessVarChange(p.name, v) }} />
+                      <InputSlider min={p.min} max={p.max} step={0.1} value={processParams[p.name]} onChange={(e, v) => { onProcessVarChange(p.name, v) }} />
                     </Box>
                   ))
                 }
               </Box>
             </CardContent>
-            <Menu anchorEl={anchorElProcessConfig} open={processConfigOpen} onClose={handleProcessConfigClose} >
-              { ProcessVariants.map((p, i) => <MenuItem key={i}>{p.title}</MenuItem>) }
+            <Menu anchorEl={anchorElProcessConfig} open={processConfigOpen} onClose={() => {handleProcessConfigClose();}} >
+              { ProcessVariants.map((p, i) => <MenuItem key={i} selected={ i==processId } onClick={() => {handleProcessConfigClose(i);}}>{p.title}</MenuItem>) }
             </Menu>
           </Card>
           <Card>
@@ -313,7 +342,9 @@ function App() {
             <CardContent>
               <Box sx={{
                 display: 'grid',
-                gridTemplateColumns: 'min-content 1fr'
+                gridTemplateColumns: 'min-content 1fr',
+                columnGap: 1,
+                alignItems: 'center'
               }}>
                 <Box><InlineMath>K_c</InlineMath></Box>
                 <InputSlider min={0.1} max={10.0} step={0.1} value={controllerParams.Kc} onChange={onKcChange} />
@@ -321,13 +352,22 @@ function App() {
                 <InputSlider min={0.0} max={10.0} step={0.1} value={controllerParams.Ti} onChange={onTiChange} />
                 <Box><InlineMath>\tau_d</InlineMath></Box>
                 <InputSlider min={0.0} max={10.0} step={0.1} value={controllerParams.Td} onChange={onTdChange} />
+
                 <Divider sx={{ gridColumn: '1 / span 2', my: 1 }} />
+
                 <Box><InlineMath>K_p</InlineMath></Box>
                 <InputSlider min={0.1} max={10.0} step={0.1} value={controllerParams.Kc} onChange={onKpChange} />
                 <Box><InlineMath>K_i</InlineMath></Box>
                 <InputSlider min={0.0} max={10.0 * controllerParams.Kc} step={0.1} value={controllerParams.Ti * controllerParams.Kc} onChange={onKiChange} />
                 <Box><InlineMath>K_d</InlineMath></Box>
                 <InputSlider min={0.0} max={10.0 * controllerParams.Kc} step={0.1} value={controllerParams.Td * controllerParams.Kc} onChange={onKdChange} />
+
+                <Divider sx={{ gridColumn: '1 / span 2', my: 1 }} />
+
+                <Box><InlineMath>u_&#123;min&#125;</InlineMath></Box>
+                <Box sx={{ textAlign: 'right', pt: 1 }}><Input value={controllerParams.u_min} size="small" onChange={onUminChange} inputProps={{ step: 0.1, type: 'number' }} sx={{ width: 100 }} /></Box>
+                <Box><InlineMath>u_&#123;max&#125;</InlineMath></Box>
+                <Box sx={{ textAlign: 'right', pt: 1 }}><Input value={controllerParams.u_max} size="small" onChange={onUmaxChange} inputProps={{ step: 0.1, type: 'number' }} sx={{ width: 100 }} /></Box>
               </Box>
             </CardContent>
           </Card>

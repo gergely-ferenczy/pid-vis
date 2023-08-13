@@ -53,7 +53,14 @@ export default class {
         return {
             Kp: 1.0,
             Tc: 0.6,
-            d: 1.0
+            d: 1.0,
+            control: {
+                Kc: 0.4,
+                Ti: 1.3,
+                Td: 0.0,
+                u_min: -10.0,
+                u_max: 10.0
+            }
         };
     }
 }

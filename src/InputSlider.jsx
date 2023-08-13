@@ -6,8 +6,6 @@ import Input from '@mui/material/Input';
 
 
 export default function InputSlider(props) {
-  const theme = useTheme();
-
   const clamp = (value) => {
     let min = props.min || 0;
     let max = props.max || 100;
@@ -25,8 +23,8 @@ export default function InputSlider(props) {
     <Box sx={{
       display: 'grid',
       gridTemplateColumns: 'auto 100px',
-      padding: theme.spacing(),
-      columnGap: theme.spacing(2),
+      pt: 1,
+      columnGap: 1,
       ...props.sx
     }}>
       <Slider size="small" min={props.min} max={props.max} step={props.step} value={props.value}
