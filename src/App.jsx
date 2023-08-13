@@ -313,6 +313,7 @@ function App() {
                 <IconButton onClick={handleProcessConfigOpen}><MoreVertIcon /></IconButton>
               }
               title={<Typography>Process configuration</Typography>}
+              subheader={ProcessVariants[processId].title}
             />
             <CardContent>
               <Box sx={{
