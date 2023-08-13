@@ -7,6 +7,7 @@ import { useTheme } from '@mui/material/styles';
 import { InfoOutlined as InfoIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
 import Plotter2 from "./Plotter";
 import InputSlider from './InputSlider';
+import Fopdt from './Fopdt';
 
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
@@ -16,20 +17,6 @@ import '@fontsource/roboto/700.css';
 function step(t, rt, st) {
   return t > 0.0 && (!rt || t < st) ? 1.0 : 0.0;
 }
-
-function fopdtTf(Kp, Tc, dt, u, processState) {
-  const ua = processState.ua;
-  ua.splice(0, 1);
-  ua.push(u);
-
-  const yp = processState.yp;
-  let y = 1 / (2 * Tc + dt) * (Kp * dt * (ua[0] + ua[1]) - (dt - 2 * Tc) * yp);
-
-  processState.yp = y;
-
-  return y;
-}
-
 
 function pid(simulationVars, controllerVars, controllerState, r, y) {
   const { samplingTime: ts } = simulationVars;
@@ -85,16 +72,17 @@ function App() {
 
   function generateProcessData(simulationVars, processVars) {
     const { simulationTime: st, samplingTime: dt } = simulationVars;
-    const { gain: pG, delay: pD, timeConstant: pTc } = processVars;
     const ticks =  Array(Math.round((1.05 * st)/dt + 1)).fill().map((_, i) => -0.05 * st + dt * i);
-    const processState = { ua: Array(Math.floor(pD / dt) + 2).fill(0), yp: 0.0 };
+    const stepData = ticks.map((t) => ({x: t, y: step(t, simulationVars.stepReturn, simulationVars.stepTime)}));
+
+    const fopdt = new Fopdt(processVars.gain, processVars.timeConstant, processVars.delay, simulationVars.samplingTime);
 
     const result = {
       title: 'Open loop response',
       limits: { min: ticks[0], max: ticks[ticks.length] },
       datasets: [
-        { label: 'Input', data: ticks.map((t) => ({x: t, y: step(t, simulationVars.stepReturn, simulationVars.stepTime)})) },
-        { label: 'Response', data: ticks.map((t) => ({x: t, y: fopdtTf(pG, pTc, dt, step(t, simulationVars.stepReturn, simulationVars.stepTime), processState)})) }
+        { label: 'Input', data: stepData },
+        { label: 'Response', data: ticks.map((t, i) => ({x: t, y: fopdt.tf(stepData[i].y)})) }
       ]
     };
 
@@ -105,10 +93,9 @@ function App() {
     const controllerState = { ei: 0, y: 0, u: 0 };
 
     const { simulationTime: st, samplingTime: dt } = simulationVars;
-    const { gain: pG, delay: pD, y0, timeConstant: pTc } = processVars;
-    const { Kc, Ti, Td } = controllerVars;
     const ticks =  Array(Math.floor(st/dt)).fill().map((_, i) => -0.05 * st + dt * i);
-    const processState = { ua: Array(Math.floor(pD / dt) + 2).fill(0), yp: 0.0 };
+
+    const fopdt = new Fopdt(processVars.gain, processVars.timeConstant, processVars.delay, simulationVars.samplingTime);
 
     const targetReference = Array(ticks.length);
     const controllerOutput = Array(ticks.length);
@@ -118,13 +105,11 @@ function App() {
     const processResponse = Array(ticks.length);
 
     ticks.map((t, k) => {
-      const y = fopdtTf(pG, pTc, dt, controllerState.u, processState);
+      const y = fopdt.tf(controllerState.u);
+      const r = step(t, simulationVars.stepReturn, simulationVars.stepTime);
+      const { u, p, i, d } = pid(simulationVars, controllerVars, controllerState, r, y);
 
-      const referenceInput = step(t, simulationVars.stepReturn, simulationVars.stepTime);
-      const {u, p, i, d} = pid(simulationVars, controllerVars, controllerState, referenceInput, y);
-      console.log(controllerState);
-
-      targetReference[k] = { x: t, y: step(t, simulationVars.stepReturn, simulationVars.stepTime) };
+      targetReference[k] = { x: t, y: r };
       controllerOutput[k] = { x: t, y: u };
       processResponse[k] = { x: t, y: y };
       pOutput[k] = { x: t, y: p };
