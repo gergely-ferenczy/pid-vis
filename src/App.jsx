@@ -5,9 +5,12 @@ import { CssBaseline, Box, Typography, IconButton, Divider, Card, CardHeader, Ca
          Menu, MenuItem, FormControlLabel, Checkbox, Input } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { InfoOutlined as InfoIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
-import Plotter2 from "./Plotter";
+import Alea from 'alea'
+import Plotter from "./Plotter";
 import InputSlider from './InputSlider';
 import Fopdt from './Processes/Fopdt';
+import Sopdt from './Processes/Sopdt';
+import MassSpringDamper from './Processes/MassSpringDamper';
 import WaterTank from './Processes/WaterTank';
 
 import '@fontsource/roboto/300.css';
@@ -39,7 +42,7 @@ function pid(simulationParams, controllerParams, controllerState, r, y) {
 }
 
 
-const ProcessVariants = [ Fopdt, WaterTank ];
+const ProcessVariants = [ Fopdt, Sopdt, WaterTank, MassSpringDamper ];
 
 
 function App() {
@@ -49,10 +52,11 @@ function App() {
     simulationTime: 20.0,
     samplingTime: 0.1,
     stepTime: 10.0,
-    stepReturn: false
+    stepReturn: false,
+    noise: 0.0
   });
 
-  const [processId, setProcessId] = useState(0);
+  const [processId, setProcessId] = useState(3);
   const [processParams, setProcessParams] = useState(ProcessVariants[processId].defaultParams);
 
   const [controllerParams, setControllerParams] = useState(processParams.control);
@@ -66,13 +70,14 @@ function App() {
     const stepData = ticks.map((t) => ({x: t, y: step(t, simulationParams.stepReturn, simulationParams.stepTime)}));
 
     const process = new ProcessVariants[processId](processParams, simulationParams.samplingTime);
+    const prng = new Alea(0);
 
     const result = {
       title: 'Open loop response',
       limits: { min: ticks[0], max: ticks[ticks.length] },
       datasets: [
         { label: 'Input', data: stepData },
-        { label: 'Response', data: ticks.map((t, i) => ({x: t, y: process.tf(stepData[i].y)})) }
+        { label: 'Response', data: ticks.map((t, i) => ({x: t, y: process.tf(stepData[i].y) + (prng() - 0.5) * 2 * simulationParams.noise})) }
       ]
     };
 
@@ -86,6 +91,7 @@ function App() {
     const ticks =  Array(Math.round((1.05 * st)/dt + 1)).fill().map((_, i) => -0.05 * st + dt * i);
 
     const process = new ProcessVariants[processId](processParams, simulationParams.samplingTime);
+    const prng = new Alea(0);
 
     const targetReference = Array(ticks.length);
     const controllerOutput = Array(ticks.length);
@@ -95,7 +101,7 @@ function App() {
     const processResponse = Array(ticks.length);
 
     ticks.map((t, k) => {
-      const y = process.tf(controllerState.u);
+      const y = process.tf(controllerState.u) + (prng() - 0.5) * 2 * simulationParams.noise;
       const r = step(t, simulationParams.stepReturn, simulationParams.stepTime);
       const { u, p, i, d } = pid(simulationParams, controllerParams, controllerState, r, y);
 
@@ -164,6 +170,15 @@ function App() {
     updateData(newSimulationParams, processId, processParams, controllerParams);
   }
 
+  function onNoiseChange(event, newValue) {
+    const newSimulationParams = {
+      ...simulationParams,
+      noise: newValue
+    };
+    setSimulationParams(newSimulationParams);
+    updateData(newSimulationParams, processId, processParams, controllerParams);
+  }
+
   function onKcChange(event, newValue) {
     const newControllerParams = {
       ...controllerParams,
@@ -193,6 +208,7 @@ function App() {
 
   function onKpChange(event, newValue) {
     const newControllerParams = {
+      ...controllerParams,
       Kc: newValue,
       Ti: controllerParams.Kc * controllerParams.Ti / newValue,
       Td: controllerParams.Kc * controllerParams.Td / newValue
@@ -283,9 +299,7 @@ function App() {
           rowGap: 1
         }}>
           <Card>
-            <CardHeader
-              title={<Typography>Simulation configuration</Typography>}
-            />
+            <CardHeader title={<Typography>Simulation configuration</Typography>} />
             <CardContent>
               <Box sx={{
                 display: 'grid',
@@ -337,6 +351,20 @@ function App() {
             </Menu>
           </Card>
           <Card>
+            <CardHeader title={<Typography>Noise configuration</Typography>} />
+            <CardContent>
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: 'min-content 1fr',
+                columnGap: 1,
+                alignItems: 'center'
+              }}>
+                <Box><InlineMath>n_y</InlineMath></Box>
+                <InputSlider min={0.0} max={1.0} step={0.01} value={simulationParams.noise} onChange={onNoiseChange} />
+              </Box>
+            </CardContent>
+          </Card>
+          <Card>
             <CardHeader
               title={<Typography>Controller configuration</Typography>}
             />
@@ -383,8 +411,8 @@ function App() {
           gridTemplateRows: '1fr 1fr',
           rowGap: 2
         }}>
-          <Plotter2 data={processData} />
-          <Plotter2 data={controllerData} />
+          <Plotter data={processData} />
+          <Plotter data={controllerData} />
         </Box>
       </Box>
     </>
