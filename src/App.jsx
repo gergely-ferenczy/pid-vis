@@ -56,7 +56,7 @@ function App() {
     noise: 0.0
   });
 
-  const [processId, setProcessId] = useState(3);
+  const [processId, setProcessId] = useState(0);
   const [processParams, setProcessParams] = useState(ProcessVariants[processId].defaultParams);
 
   const [controllerParams, setControllerParams] = useState(processParams.control);
@@ -101,9 +101,9 @@ function App() {
     const processResponse = Array(ticks.length);
 
     ticks.map((t, k) => {
-      const y = process.tf(controllerState.u) + (prng() - 0.5) * 2 * simulationParams.noise;
+      const y = process.tf(controllerState.u);
       const r = step(t, simulationParams.stepReturn, simulationParams.stepTime);
-      const { u, p, i, d } = pid(simulationParams, controllerParams, controllerState, r, y);
+      const { u, p, i, d } = pid(simulationParams, controllerParams, controllerState, r, y + (prng() - 0.5) * 2 * simulationParams.noise);
 
       targetReference[k] = { x: t, y: r };
       controllerOutput[k] = { x: t, y: u };
