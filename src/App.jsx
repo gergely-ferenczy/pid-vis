@@ -12,6 +12,7 @@ import Fopdt from './Processes/Fopdt';
 import Sopdt from './Processes/Sopdt';
 import MassSpringDamper from './Processes/MassSpringDamper';
 import WaterTank from './Processes/WaterTank';
+import FolpFilter from './Filters/Folp';
 
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
@@ -53,7 +54,8 @@ function App() {
     samplingTime: 0.1,
     stepTime: 10.0,
     stepReturn: false,
-    noise: 0.0
+    noise: 0.0,
+    filter: 0.0
   });
 
   const [processId, setProcessId] = useState(0);
@@ -77,7 +79,7 @@ function App() {
       limits: { min: ticks[0], max: ticks[ticks.length] },
       datasets: [
         { label: 'Input', data: stepData },
-        { label: 'Response', data: ticks.map((t, i) => ({x: t, y: process.tf(stepData[i].y) + (prng() - 0.5) * 2 * simulationParams.noise})) }
+        { label: 'Response', data: ticks.map((t, i) => ({x: t, y: process.tf(stepData[i].y)})) }
       ]
     };
 
@@ -87,11 +89,12 @@ function App() {
   function generateControllerData(simulationParams, processId, processParams, controllerParams) {
     const controllerState = { ei: 0, y: 0, u: 0 };
 
-    const { simulationTime: st, samplingTime: dt } = simulationParams;
+    const { simulationTime: st, samplingTime: dt, noise: nc, filter: fa } = simulationParams;
     const ticks =  Array(Math.round((1.05 * st)/dt + 1)).fill().map((_, i) => -0.05 * st + dt * i);
 
-    const process = new ProcessVariants[processId](processParams, simulationParams.samplingTime);
+    const process = new ProcessVariants[processId](processParams, dt);
     const prng = new Alea(0);
+    const filter = new FolpFilter({ a: fa}, dt);
 
     const targetReference = Array(ticks.length);
     const controllerOutput = Array(ticks.length);
@@ -99,15 +102,20 @@ function App() {
     const iOutput = Array(ticks.length);
     const dOutput = Array(ticks.length);
     const processResponse = Array(ticks.length);
+    const processResponseWithNoise = Array(ticks.length);
 
     ticks.map((t, k) => {
+      const n = (prng() - 0.5) * 2 * nc;
       const y = process.tf(controllerState.u);
+      const yn = y + n;
+      const ynf = filter.tf(yn);
       const r = step(t, simulationParams.stepReturn, simulationParams.stepTime);
-      const { u, p, i, d } = pid(simulationParams, controllerParams, controllerState, r, y + (prng() - 0.5) * 2 * simulationParams.noise);
+      const { u, p, i, d } = pid(simulationParams, controllerParams, controllerState, r, ynf);
 
       targetReference[k] = { x: t, y: r };
       controllerOutput[k] = { x: t, y: u };
       processResponse[k] = { x: t, y: y };
+      processResponseWithNoise[k] = { x: t, y: yn };
       pOutput[k] = { x: t, y: p };
       iOutput[k] = { x: t, y: i };
       dOutput[k] = { x: t, y: d };
@@ -120,6 +128,7 @@ function App() {
         { label: 'r', data: targetReference },
         { label: 'u', data: controllerOutput },
         { label: 'y', data: processResponse },
+        { label: 'y+n', data: processResponseWithNoise, hidden: true },
         { label: 'p', data: pOutput, hidden: true },
         { label: 'i', data: iOutput, hidden: true },
         { label: 'd', data: dOutput, hidden: true }
@@ -174,6 +183,15 @@ function App() {
     const newSimulationParams = {
       ...simulationParams,
       noise: newValue
+    };
+    setSimulationParams(newSimulationParams);
+    updateData(newSimulationParams, processId, processParams, controllerParams);
+  }
+
+  function onFilterChange(event, newValue) {
+    const newSimulationParams = {
+      ...simulationParams,
+      filter: newValue
     };
     setSimulationParams(newSimulationParams);
     updateData(newSimulationParams, processId, processParams, controllerParams);
@@ -361,6 +379,8 @@ function App() {
               }}>
                 <Box><InlineMath>n_y</InlineMath></Box>
                 <InputSlider min={0.0} max={1.0} step={0.01} value={simulationParams.noise} onChange={onNoiseChange} />
+                <Box><InlineMath>f_&#123;\alpha&#125;</InlineMath></Box>
+                <InputSlider min={0.0} max={1.0} step={0.01} value={simulationParams.filter} onChange={onFilterChange} />
               </Box>
             </CardContent>
           </Card>
