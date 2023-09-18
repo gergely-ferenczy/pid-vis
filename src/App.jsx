@@ -1,8 +1,7 @@
 import { useState } from "react";
-import 'katex/dist/katex.min.css';
-import { InlineMath } from 'react-katex';
+import { InlineMath, BlockMath } from 'react-katex';
 import { CssBaseline, Box, Typography, IconButton, Divider, Card, CardHeader, CardContent,
-         Menu, MenuItem, FormControlLabel, Checkbox, Input } from '@mui/material';
+         Menu, MenuItem, FormControlLabel, Checkbox, Input, Popover } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { InfoOutlined as InfoIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
 import Alea from 'alea'
@@ -18,6 +17,8 @@ import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
+import 'katex/dist/katex.min.css';
+import './App.css';
 
 function step(t, rt, st) {
   return t > 0.0 && (!rt || t < st) ? 1.0 : 0.0;
@@ -25,16 +26,16 @@ function step(t, rt, st) {
 
 function pid(simulationParams, controllerParams, controllerState, r, y) {
   const { samplingTime: ts } = simulationParams;
-  const { Kc, Ti, Td } = controllerParams;
+  const { Kp, Ki, Kd } = controllerParams;
   const { ei: ei_prev, y: y_prev } = controllerState;
 
 
   const e = r - y;
   const ei = ei_prev + e;
   const yd = y - y_prev;
-  const p = Kc * e;
-  const i = Kc * Ti * ts * ei;
-  const d = -Kc * Td / ts * yd;
+  const p = Kp * e;
+  const i = Math.min(Math.max(Ki * ts * ei, controllerParams.i_min), controllerParams.i_max);
+  const d = -Kd / ts * yd;
   const u = Math.min(Math.max(p + i + d, controllerParams.u_min), controllerParams.u_max);
   controllerState.ei = ei;
   controllerState.y = y;
@@ -200,7 +201,9 @@ function App() {
   function onKcChange(event, newValue) {
     const newControllerParams = {
       ...controllerParams,
-      Kc: newValue
+      Kp: newValue,
+      Ki: controllerParams.Ki / controllerParams.Kp * newValue || 0.0,
+      Kd: controllerParams.Kd / controllerParams.Kp * newValue || 0.0
     };
     setControllerParams(newControllerParams);
     updateData(simulationParams, processId, processParams, newControllerParams);
@@ -209,7 +212,7 @@ function App() {
   function onTiChange(event, newValue) {
     const newControllerParams = {
       ...controllerParams,
-      Ti: newValue
+      Ki: newValue * controllerParams.Kp
     };
     setControllerParams(newControllerParams);
     updateData(simulationParams, processId, processParams, newControllerParams);
@@ -218,7 +221,7 @@ function App() {
   function onTdChange(event, newValue) {
     const newControllerParams = {
       ...controllerParams,
-      Td: newValue
+      Kd: newValue * controllerParams.Kp
     };
     setControllerParams(newControllerParams);
     updateData(simulationParams, processId, processParams, newControllerParams);
@@ -227,9 +230,7 @@ function App() {
   function onKpChange(event, newValue) {
     const newControllerParams = {
       ...controllerParams,
-      Kc: newValue,
-      Ti: controllerParams.Kc * controllerParams.Ti / newValue,
-      Td: controllerParams.Kc * controllerParams.Td / newValue
+      Kp: newValue
     };
     setControllerParams(newControllerParams);
     updateData(simulationParams, processId, processParams, newControllerParams);
@@ -238,7 +239,7 @@ function App() {
   function onKiChange(event, newValue) {
     const newControllerParams = {
       ...controllerParams,
-      Ti: newValue / controllerParams.Kc
+      Ki: newValue
     };
     setControllerParams(newControllerParams);
     updateData(simulationParams, processId, processParams, newControllerParams);
@@ -247,7 +248,7 @@ function App() {
   function onKdChange(event, newValue) {
     const newControllerParams = {
       ...controllerParams,
-      Td: newValue / controllerParams.Kc
+      Kd: newValue
     };
     setControllerParams(newControllerParams);
     updateData(simulationParams, processId, processParams, newControllerParams);
@@ -273,6 +274,26 @@ function App() {
     updateData(simulationParams, processId, processParams, newControllerParams);
   }
 
+  function onIminChange(event) {
+    let newValue = event.target.value === '' ? 0 : Number(event.target.value);
+    const newControllerParams = {
+      ...controllerParams,
+      i_min: newValue
+    };
+    setControllerParams(newControllerParams);
+    updateData(simulationParams, processId, processParams, newControllerParams);
+  }
+
+  function onImaxChange(event) {
+    let newValue = event.target.value === '' ? 0 : Number(event.target.value);
+    const newControllerParams = {
+      ...controllerParams,
+      i_max: newValue
+    };
+    setControllerParams(newControllerParams);
+    updateData(simulationParams, processId, processParams, newControllerParams);
+  }
+
   function onProcessVarChange(paramId, newValue) {
     let newProcessParams = { ...processParams };
     newProcessParams[paramId] = newValue;
@@ -280,15 +301,16 @@ function App() {
     updateData(simulationParams, processId, newProcessParams, controllerParams);
   }
 
-  const [anchorElProcessConfig, setAnchorSimConfigAction] = useState(null);
+
+  const [anchorElProcessConfig, setAnchorElProcessConfig] = useState(null);
   const processConfigOpen = Boolean(anchorElProcessConfig);
 
   function handleProcessConfigOpen(event) {
-    setAnchorSimConfigAction(event.currentTarget);
+    setAnchorElProcessConfig(event.currentTarget);
   }
 
   function handleProcessConfigClose(newProcessId) {
-    setAnchorSimConfigAction(null);
+    setAnchorElProcessConfig(null);
 
     if (newProcessId !== undefined) {
       const newProcessParams = ProcessVariants[newProcessId].defaultParams;
@@ -300,21 +322,50 @@ function App() {
     }
   }
 
+
+  const [anchorElProcessInfo, setAnchorElProcessInfo] = useState(null);
+  const processInfoOpen = Boolean(anchorElProcessInfo);
+
+  function handleProcessInfoOpen(event) {
+    setAnchorElProcessInfo(event.currentTarget);
+  }
+
+  function handleProcessInfoClose() {
+    setAnchorElProcessInfo(null);
+  }
+
+
+  const [anchorElControllerInfo, setAnchorElControllerInfo] = useState(null);
+  const controllerInfoOpen = Boolean(anchorElControllerInfo);
+
+  function handleControllerInfoOpen(event) {
+    setAnchorElControllerInfo(event.currentTarget);
+  }
+
+  function handleControllerInfoClose() {
+    setAnchorElControllerInfo(null);
+  }
+
+  const Ti = (controllerParams.Kp != 0.0) ? controllerParams.Ki / controllerParams.Kp : 0.0;
+  const Td = (controllerParams.Kp != 0.0) ? controllerParams.Kd / controllerParams.Kp : 0.0;
+
   return (
     <>
       <CssBaseline />
       <Box sx={{
         display: 'grid',
-        gridTemplateColumns: '400px 1fr',
+        gridTemplateColumns: '600px 1fr',
         columnGap: 2,
         padding: 1
       }}>
         <Box sx={{
           display: 'grid',
-          gridAutoFlow: 'row',
-          gridAutoRows: 'min-content',
+          gridAutoFlow: 'column',
+          gridTemplateColumns: '1fr 1fr',
+          gridTemplateRows: 'auto auto auto',
           alignContent: 'start',
-          rowGap: 1
+          alignItems: 'start',
+          gap: 1
         }}>
           <Card>
             <CardHeader title={<Typography>Simulation configuration</Typography>} />
@@ -342,7 +393,10 @@ function App() {
           <Card>
             <CardHeader
               action={
-                <IconButton onClick={handleProcessConfigOpen}><MoreVertIcon /></IconButton>
+                <>
+                  <IconButton onClick={handleProcessInfoOpen}><InfoIcon /></IconButton>
+                  <IconButton onClick={handleProcessConfigOpen}><MoreVertIcon /></IconButton>
+                </>
               }
               title={<Typography>Process configuration</Typography>}
               subheader={ProcessVariants[processId].title}
@@ -367,6 +421,18 @@ function App() {
             <Menu anchorEl={anchorElProcessConfig} open={processConfigOpen} onClose={() => {handleProcessConfigClose();}} >
               { ProcessVariants.map((p, i) => <MenuItem key={i} selected={ i==processId } onClick={() => {handleProcessConfigClose(i);}}>{p.title}</MenuItem>) }
             </Menu>
+            <Popover
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right', }}
+              transformOrigin={{ vertical: 'bottom', horizontal: 'left', }}
+              anchorEl={anchorElProcessInfo}
+              open={processInfoOpen}
+              onClose={handleProcessInfoClose}
+            >
+              <Box sx={{ p: 2, width: 700 }}>
+                <Typography variant="h5">Controller Description</Typography>
+                { ProcessVariants[processId].info }
+              </Box>
+            </Popover>
           </Card>
           <Card>
             <CardHeader title={<Typography>Noise configuration</Typography>} />
@@ -384,8 +450,11 @@ function App() {
               </Box>
             </CardContent>
           </Card>
-          <Card>
+          <Card sx={{ gridArea: '1/2/4/2' }}>
             <CardHeader
+              action={
+                <IconButton onClick={handleControllerInfoOpen}><InfoIcon /></IconButton>
+              }
               title={<Typography>Controller configuration</Typography>}
             />
             <CardContent>
@@ -396,29 +465,82 @@ function App() {
                 alignItems: 'center'
               }}>
                 <Box><InlineMath>K_c</InlineMath></Box>
-                <InputSlider min={0.1} max={10.0} step={0.1} value={controllerParams.Kc} onChange={onKcChange} />
+                <InputSlider min={0.0} max={10.0} step={0.1} value={controllerParams.Kp} onChange={onKcChange} />
                 <Box><InlineMath>\tau_i</InlineMath></Box>
-                <InputSlider min={0.0} max={10.0} step={0.1} value={controllerParams.Ti} onChange={onTiChange} />
+                <InputSlider min={0.0} max={10.0 / controllerParams.Kp} step={0.1} value={Ti} onChange={onTiChange} />
                 <Box><InlineMath>\tau_d</InlineMath></Box>
-                <InputSlider min={0.0} max={10.0} step={0.1} value={controllerParams.Td} onChange={onTdChange} />
+                <InputSlider min={0.0} max={10.0 / controllerParams.Kp} step={0.1} value={Td} onChange={onTdChange} />
 
                 <Divider sx={{ gridColumn: '1 / span 2', my: 1 }} />
 
                 <Box><InlineMath>K_p</InlineMath></Box>
-                <InputSlider min={0.1} max={10.0} step={0.1} value={controllerParams.Kc} onChange={onKpChange} />
+                <InputSlider min={0.0} max={10.0} step={0.1} value={controllerParams.Kp} onChange={onKpChange} />
                 <Box><InlineMath>K_i</InlineMath></Box>
-                <InputSlider min={0.0} max={10.0 * controllerParams.Kc} step={0.1} value={controllerParams.Ti * controllerParams.Kc} onChange={onKiChange} />
+                <InputSlider min={0.0} max={10.0} step={0.1} value={controllerParams.Ki} onChange={onKiChange} />
                 <Box><InlineMath>K_d</InlineMath></Box>
-                <InputSlider min={0.0} max={10.0 * controllerParams.Kc} step={0.1} value={controllerParams.Td * controllerParams.Kc} onChange={onKdChange} />
+                <InputSlider min={0.0} max={10.0} step={0.1} value={controllerParams.Kd} onChange={onKdChange} />
 
                 <Divider sx={{ gridColumn: '1 / span 2', my: 1 }} />
 
-                <Box><InlineMath>u_&#123;min&#125;</InlineMath></Box>
-                <Box sx={{ textAlign: 'right', pt: 1 }}><Input value={controllerParams.u_min} size="small" onChange={onUminChange} inputProps={{ step: 0.1, type: 'number' }} sx={{ width: 100 }} /></Box>
-                <Box><InlineMath>u_&#123;max&#125;</InlineMath></Box>
-                <Box sx={{ textAlign: 'right', pt: 1 }}><Input value={controllerParams.u_max} size="small" onChange={onUmaxChange} inputProps={{ step: 0.1, type: 'number' }} sx={{ width: 100 }} /></Box>
+                <Box><InlineMath>{'i_{min}'}</InlineMath></Box>
+                <Box sx={{ textAlign: 'right', pt: 1 }}><Input value={controllerParams.i_min} size="small" onChange={onIminChange} inputProps={{ step: 0.1, type: 'number' }} sx={{ width: 50 }} /></Box>
+                <Box><InlineMath>{'i_{max}'}</InlineMath></Box>
+                <Box sx={{ textAlign: 'right', pt: 1 }}><Input value={controllerParams.i_max} size="small" onChange={onImaxChange} inputProps={{ step: 0.1, type: 'number' }} sx={{ width: 50 }} /></Box>
+                <Box><InlineMath>{'u_{min}'}</InlineMath></Box>
+                <Box sx={{ textAlign: 'right', pt: 1 }}><Input value={controllerParams.u_min} size="small" onChange={onUminChange} inputProps={{ step: 0.1, type: 'number' }} sx={{ width: 50 }} /></Box>
+                <Box><InlineMath>{'u_{max}'}</InlineMath></Box>
+                <Box sx={{ textAlign: 'right', pt: 1 }}><Input value={controllerParams.u_max} size="small" onChange={onUmaxChange} inputProps={{ step: 0.1, type: 'number' }} sx={{ width: 50 }} /></Box>
               </Box>
             </CardContent>
+            <Popover
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right', }}
+              transformOrigin={{ vertical: 'bottom', horizontal: 'left', }}
+              anchorEl={anchorElControllerInfo}
+              open={controllerInfoOpen}
+              onClose={handleControllerInfoClose}
+            >
+              <Box sx={{ p: 2 }}>
+                <Typography variant="h5">Controller Description</Typography>
+                <BlockMath>
+                  {`
+                    \\begin{array}{l}
+                      \\begin{aligned}
+                      e_k &= r_k - y_k \\\\
+                      u_k &= K_p \\cdot e_k + K_i \\sum_{i=1}^{k} e_i - K_d \\left(y_k-y_{k-1} \\right)
+                            = K_c \\left(e_k + T_i \\sum_{i=1}^{k} e_i - T_d \\left(y_k-y_{k-1} \\right) \\right) \\\\\\\\
+                      \\end{aligned}\\\\
+                      \\text{Where}
+                    \\end{array}
+                  `}
+                </BlockMath>
+                <Box className={'katex-small'}>
+                  <BlockMath>
+                    {`
+                      \\begin{array}{ll}
+                        \\begin{aligned}
+                          & K_P && \\text{Proportional gain.} \\quad \\\\
+                          & K_i && \\text{Integral gain.}     \\quad \\\\
+                          & K_d && \\text{Derivative gain.}   \\quad \\\\
+                        \\end{aligned}
+                        \\begin{aligned}
+                          & K_c && \\text{Global controller gain.} \\\\
+                          & \\tau_i && \\text{Integral time constant.} \\\\
+                          & \\tau_d && \\text{Derivative time constant.}
+                        \\end{aligned}
+                      \\end{array} \\\\
+                      \\begin{aligned}
+                        \\\\
+                        & u_k && \\text{Controller output.} \\\\
+                        & y_k && \\text{Process variable, output of the system.}\\\\
+                        & r_k && \\text{Reference point, target value.} \\\\
+                        & e_k && \\text{Calculated error.}
+                      \\end{aligned}
+                    `}
+                  </BlockMath>
+                </Box>
+                <object data="control_loop.svg" width={900} />
+              </Box>
+            </Popover>
           </Card>
         </Box>
         <Box sx={{

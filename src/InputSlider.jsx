@@ -22,7 +22,7 @@ export default function InputSlider(props) {
   return (
     <Box sx={{
       display: 'grid',
-      gridTemplateColumns: 'auto 100px',
+      gridTemplateColumns: 'auto 50px',
       pt: 1,
       columnGap: 1,
       ...props.sx

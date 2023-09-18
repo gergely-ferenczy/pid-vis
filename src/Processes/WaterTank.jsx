@@ -45,9 +45,11 @@ export default class {
             c: 10.0,
             A: 0.01,
             control: {
-                Kc: 0.4,
-                Ti: 0.0,
-                Td: 0.0,
+                Kp: 0.4,
+                Ki: 0.0,
+                Kd: 0.0,
+                i_min: 0.0,
+                i_max: 1.0,
                 u_min: 0.0,
                 u_max: 1.0
             }

@@ -1,22 +1,27 @@
 export default class {
 
-    static title = "First order plus dead time";
+    static title = "Second order plus dead time";
 
     constructor(params, samplingTime) {
         this.Kp = params.Kp;
         this.Tc = params.Tc;
+        this.Z = params.Z;
         this.d = params.d;
         this.dt = samplingTime;
-        this.ua = Array(Math.floor(params.d / samplingTime) + 2).fill(0);
-        this.y = 0;
+        this.ua = Array(Math.floor(params.d / samplingTime) + 3).fill(0);
+        this.ya = [0.0, 0.0];
     }
 
     tf(u) {
-        const { Kp, Tc, dt, ua, y: y_prev } = this;
+        const { Kp, Tc, Z, dt, ua, ya } = this;
         ua.splice(0, 1);
         ua.push(u);
-        let y = (Kp * dt * (ua[0] + ua[1]) - (-2 * Tc + dt) * y_prev) / (2 * Tc + dt);
-        this.y = y;
+
+        const a = 4*Tc*Tc / (dt*dt);
+        const b = 4*Z*Tc / dt;
+        let y = (Kp * (ua[2] + 2*ua[1] + ua[0]) - ya[1] * (-a*2 + 2) - ya[0] * (a - b + 1)) / (a + b + 1);
+        ya[0] = ya[1];
+        ya[1] = y;
         return y;
     }
 
@@ -39,6 +44,14 @@ export default class {
                 step: 0.1
             },
             {
+                name: 'Z',
+                title: '\\zeta',
+                description: 'Dampening factor',
+                min: 0.0,
+                max: 10.0,
+                step: 0.1
+            },
+            {
                 name: 'd',
                 title: '\\theta_p',
                 description: 'Delay',
@@ -53,11 +66,14 @@ export default class {
         return {
             Kp: 1.0,
             Tc: 0.6,
-            d: 1.0,
+            Z: 0.2,
+            d: 0.5,
             control: {
-                Kc: 0.4,
-                Ti: 1.3,
-                Td: 0.0,
+                Kp: 0.1,
+                Ki: 0.35,
+                Kd: 0.15,
+                i_min: -10.0,
+                i_max: 10.0,
                 u_min: -10.0,
                 u_max: 10.0
             }
