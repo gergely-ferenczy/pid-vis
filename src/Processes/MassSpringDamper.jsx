@@ -35,12 +35,12 @@ export default class {
   static info =
   <>
     <Box sx={{ mb: 2, display: 'grid', gridTemplateColumns: 'auto auto' }}>
-    <Typography>
-      The mass-spring-damper model consists of discrete mass nodes distributed throughout an object and
-      interconnected via a network of springs and dampers. This model is well-suited for modelling objects
-      with complex material properties such as nonlinearity and viscoelasticity.
-    </Typography>
-    <Box sx={{ mt: '-10px' }}><object data="mass_spring_damper.svg" /></Box>
+      <Typography>
+        The mass-spring-damper model consists of discrete mass nodes distributed throughout an object and
+        interconnected via a network of springs and dampers. This model is well-suited for modelling objects
+        with complex material properties such as nonlinearity and viscoelasticity.
+      </Typography>
+      <Box sx={{ mt: '-10px' }}><object data="mass_spring_damper.svg" /></Box>
     </Box>
     <Typography>Sum of forces applied on the mass:</Typography>
     <Typography><InlineMath>{`F_s = -k x`}</InlineMath> is the spring force, where <InlineMath>k</InlineMath> is the spring constant.</Typography>

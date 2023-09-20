@@ -1,58 +1,93 @@
+import { Box, Typography } from '@mui/material';
+import { BlockMath } from "react-katex";
+
 export default class {
 
-    static title = "Water tank level";
+  constructor(params, samplingTime) {
+  this.ci = params.ci;
+  this.co = params.co;
+  this.A = params.A;
+  this.dt = samplingTime;
+  this.y = 0.0;
+  this.u = 0.0;
+  this.i = 0;
+  }
 
-    constructor(params, samplingTime) {
-        this.c = params.c;
-        this.A = params.A;
-        this.dt = samplingTime;
-        this.y = 0.0;
-        this.u = 0.0;
-    }
+  tf(u) {
+  const { ci, co, A, dt, u: u_prev, y: y_prev } = this;
+  u = Math.min(Math.max(u, 0.0), 1.0);
+  const y = Math.max((ci * (u + u_prev) / 2 - co) / 1000 / A * dt + y_prev, 0.0);
+  this.y = y;
+  this.u = u;
+  return y;
+  }
 
-    tf(u) {
-        const { c, A, dt, u: u_prev, y: y_prev } = this;
-        u = Math.min(Math.max(u, 0.0), 100.0);
-        const y = c / 1000 / A * dt / 2 * (u + u_prev) + y_prev;
-        this.y = y;
-        this.u = u;
-        return y;
-    }
+  static title = "Water tank level";
 
-    static get paramDefinitions() {
-        return [
-            {
-                name: 'c',
-                title: 'c',
-                description: 'Maximum inlet valve flow rate [l/s]',
-                min: 0.1,
-                max: 20.0,
-                step: 0.1
-            },
-            {
-                name: 'A',
-                title: 'A',
-                description: 'Water tank base area [m2]',
-                min: 0.005,
-                max: 0.02,
-                step: 0.005
-            }
-        ];
-    }
+  static info =
+  <>
+  <Typography>
+    A simple model of a water tank with a controllable inlet and an outlet with constant flow.
+  </Typography>
+  <Box sx={{ mb: 2, display: 'grid', gridTemplateColumns: 'auto auto' }}>
+    <Box>
+      <BlockMath>{`\\frac{\\delta h}{ \\delta t} = \\frac{c_i \\ u - c_o}{A}`}</BlockMath>
+      <Box className={'katex-small'}>
+        <BlockMath>
+          {`
+            \\begin{aligned}
+            & h && \\text{Water tank level [m]} \\\\
+            & A && \\text{Water tank base area [m2]} \\\\
+            & c_i && \\text{Maximum inlet valve flow rate [l/s]} \\\\
+            & c_o && \\text{Outlet valve flow rate [l/s]} \\\\
+          \\end{aligned}
+          `}
+        </BlockMath>
+      </Box>
+    </Box>
+    <Box><object data="water_tank.svg" /></Box>
+  </Box>
+  </>
 
-    static get defaultParams() {
-        return {
-            c: 10.0,
-            A: 0.01,
-            control: {
-                Kp: 0.4,
-                Ki: 0.0,
-                Kd: 0.0,
-                i_min: 0.0,
-                i_max: 1.0,
-                u_min: 0.0,
-                u_max: 1.0
-            }
-        };
-    }
+  static paramDefinitions = [
+  {
+    name: 'ci',
+    title: 'c_i',
+    description: 'Maximum inlet valve flow rate [l/s]',
+    min: 0.0,
+    max: 20.0,
+    step: 0.1
+  },
+  {
+    name: 'co',
+    title: 'c_o',
+    description: 'Outlet valve flow rate [l/s]',
+    min: 0.0,
+    max: 20.0,
+    step: 0.1
+  },
+  {
+    name: 'A',
+    title: 'A',
+    description: 'Water tank base area [m2]',
+    min: 0.01,
+    max: 0.04,
+    step: 0.01
+  }
+  ];
+
+  static defaultParams = {
+  ci: 10.0,
+  co: 0.0,
+  A: 0.01,
+  control: {
+    Kp: 0.4,
+    Ki: 0.0,
+    Kd: 0.0,
+    i_min: 0.0,
+    i_max: 1.0,
+    u_min: 0.0,
+    u_max: 1.0
+  }
+  };
 }
