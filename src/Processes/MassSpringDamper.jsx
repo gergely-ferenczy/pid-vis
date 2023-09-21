@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Link } from '@mui/material';
 import { InlineMath } from 'react-katex';
 
 export default class {
@@ -6,7 +6,7 @@ export default class {
   constructor(params, samplingTime) {
     this.F = params.F;
     this.k = params.k;
-    this.d = params.d;
+    this.c = params.c;
     this.m = params.m;
     this.dt = samplingTime;
     this.ua = Array(3).fill(0);
@@ -14,12 +14,12 @@ export default class {
   }
 
   tf(u) {
-    const { F, k, d, m, dt, ua, ya } = this;
+    const { F, k, c: dc, m, dt, ua, ya } = this;
     ua.splice(0, 1);
     ua.push(u * F / m);
 
     const w = Math.sqrt(k/m);
-    const Z = d / (2*m*w);
+    const Z = dc / (2*m*w);
 
     const a = 4 / (dt*dt);
     const b = 4*Z*w / dt;
@@ -44,7 +44,7 @@ export default class {
     </Box>
     <Typography>Sum of forces applied on the mass:</Typography>
     <Typography><InlineMath>{`F_s = -k x`}</InlineMath> is the spring force, where <InlineMath>k</InlineMath> is the spring constant.</Typography>
-    <Typography><InlineMath>{`F_d = -c \\dot{x}`}</InlineMath> is the dampening force, where <InlineMath>c</InlineMath> is the damping coefficient.</Typography>
+    <Typography><InlineMath>{`F_d = -c \\dot{x}`}</InlineMath> is the damping force, where <InlineMath>c</InlineMath> is the damping coefficient.</Typography>
     <InlineMath>{`\\sum{F} = -kx - c \\dot{x} + F_{external} = m \\ddot{x}`}</InlineMath>
     <Typography sx={{ mt: 2 }}>By rearranging this equation, we can derive the standard form:</Typography>
     <Typography><InlineMath>{`\\ddot{x} + 2 \\zeta \\omega_n \\dot{x} + \\omega_n^2 x = u
@@ -53,6 +53,7 @@ export default class {
     <Typography sx={{ mt: 2 }}>
     <InlineMath>{`\\omega_n`}</InlineMath> is the undamped natural frequency and <InlineMath>{`\\zeta`}</InlineMath> is the damping ratio.
     </Typography>
+    <Typography><Link href='https://en.wikipedia.org/wiki/Mass-spring-damper_model' target='_blank' rel='noopener'>Source</Link></Typography>
   </>
 
   static paramDefinitions = [
@@ -73,9 +74,9 @@ export default class {
       step: 0.1
     },
     {
-      name: 'd',
-      title: 'd',
-      description: 'Dampening factor',
+      name: 'c',
+      title: 'c',
+      description: 'Damping coefficient',
       min: 0.0,
       max: 10.0,
       step: 0.1
@@ -93,7 +94,7 @@ export default class {
   static defaultParams = {
     F: 1.0,
     k: 1.0,
-    d: 1.0,
+    c: 1.0,
     m: 1.0,
     control: {
       Kp: 0.1,

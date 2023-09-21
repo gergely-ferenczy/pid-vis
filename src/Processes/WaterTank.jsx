@@ -26,27 +26,28 @@ export default class {
 
   static info =
   <>
-  <Typography>
-    A simple model of a water tank with a controllable inlet and an outlet with constant flow.
-  </Typography>
-  <Box sx={{ mb: 2, display: 'grid', gridTemplateColumns: 'auto auto' }}>
-    <Box>
-      <BlockMath>{`\\frac{\\delta h}{ \\delta t} = \\frac{c_i \\ u - c_o}{A}`}</BlockMath>
-      <Box className={'katex-small'}>
-        <BlockMath>
-          {`
-            \\begin{aligned}
-            & h && \\text{Water tank level [m]} \\\\
-            & A && \\text{Water tank base area [m2]} \\\\
-            & c_i && \\text{Maximum inlet valve flow rate [l/s]} \\\\
-            & c_o && \\text{Outlet valve flow rate [l/s]} \\\\
-          \\end{aligned}
-          `}
-        </BlockMath>
+    <Typography>
+      A simple model of a water tank with a controllable inlet and a constant flow outlet.
+      The controlled parameter is the height of the water column in the tank.
+    </Typography>
+    <Box sx={{ mb: 2, display: 'grid', gridTemplateColumns: 'auto auto' }}>
+      <Box>
+        <BlockMath>{`\\frac{\\delta h}{ \\delta t} = \\frac{c_i \\ u - c_o}{A}`}</BlockMath>
+        <Box className={'katex-small'}>
+          <BlockMath>
+            {`
+              \\begin{aligned}
+              & h && \\text{Water tank level [m]} \\\\
+              & A && \\text{Water tank base area [m2]} \\\\
+              & c_i && \\text{Maximum inlet valve flow rate [l/s]} \\\\
+              & c_o && \\text{Outlet valve flow rate [l/s]} \\\\
+            \\end{aligned}
+            `}
+          </BlockMath>
+        </Box>
       </Box>
+      <Box><object data="water_tank.svg" /></Box>
     </Box>
-    <Box><object data="water_tank.svg" /></Box>
-  </Box>
   </>
 
   static paramDefinitions = [
