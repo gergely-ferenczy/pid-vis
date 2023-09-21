@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { InlineMath, BlockMath } from 'react-katex';
 import { Box, Typography, Card, CardHeader, CardContent, IconButton, Divider, Input,
-         Popover } from '@mui/material';
+         Popover, Link } from '@mui/material';
 import { InfoOutlined as InfoIcon } from '@mui/icons-material';
 import InputSlider from '../InputSlider';
 
@@ -85,15 +85,49 @@ export default function SimulationConfigBox(props) {
         open={controllerInfoOpen}
         onClose={handleControllerInfoClose}
       >
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ p: 2, width: 'min-content' }}>
           <Typography variant="h5">Controller Description</Typography>
+          <Typography>
+            A proportional–integral–derivative controller (PID) is a control loop mechanism employing feedback that is
+            widely used in industrial control systems and a variety of other applications requiring continuously modulated
+            control. A PID controller continuously calculates an error value (<InlineMath>e(t)</InlineMath>) as the
+            difference between a desired setpoint (<InlineMath>SP=r(t)</InlineMath>) and a measured process variable
+            (<InlineMath>PV=y(t)</InlineMath>) and applies a correction based on proportional, integral, and derivative
+            terms (denoted <InlineMath>P</InlineMath>, <InlineMath>I</InlineMath> and <InlineMath>D</InlineMath> respectively),
+            hence the name.
+          </Typography>
+          <Typography sx={{ textAlign: 'right' }}>
+            <Link href='https://en.wikipedia.org/wiki/Proportional%E2%80%93integral%E2%80%93derivative_controller'
+                target='_blank' rel='noopener'>
+              Source1
+            </Link>
+            &nbsp;&nbsp;
+            <Link href='https://apmonitor.com/pdc/index.php/Main/ProportionalIntegralDerivative'
+                target='_blank' rel='noopener'>
+              Source2
+            </Link>
+          </Typography>
+          <Typography sx={{ mt: 2 }}>
+            The controller used in this example is slightly modified compared to the standard examples. It uses the
+            process variable directly instead of the error value to calculate the derivative term to avoid kickback.
+            It also has configurable saturation elements for the integral term and the controller output.
+          </Typography>
+          <Typography sx={{ mt: 2 }}>
+            The error value is obtained by:
+          </Typography>
+          <BlockMath>{`e_k = r_k - y_k`}</BlockMath>
+          <Typography>
+            For practical purposes, this example only describes the discrete PID equation, as this is what will
+            ultimately be implemented in code. The controller equation has two typical forms, which are equal in
+            output, but the parameters are structured a bit differently. In the interactive example, both versions
+            can be experimented with simultaneously.
+          </Typography>
           <BlockMath>
             {`
               \\begin{array}{l}
                 \\begin{aligned}
-                e_k &= r_k - y_k \\\\
-                u_k &= K_p \\cdot e_k + K_i \\sum_{i=1}^{k} e_i - K_d \\left(y_k-y_{k-1} \\right)
-                      = K_c \\left(e_k + T_i \\sum_{i=1}^{k} e_i - T_d \\left(y_k-y_{k-1} \\right) \\right) \\\\\\\\
+                u_k &= K_p \\cdot e_k + K_i \\sum_{i=1}^{k} e_i - K_d \\left(y_k-y_{k-1} \\right) & (1)\\\\
+                u_k &= K_c \\left(e_k + T_i \\sum_{i=1}^{k} e_i - T_d \\left(y_k-y_{k-1} \\right) \\right) & (2) \\\\\\\\
                 \\end{aligned}\\\\
                 \\text{Where}
               \\end{array}
@@ -124,7 +158,7 @@ export default function SimulationConfigBox(props) {
               `}
             </BlockMath>
           </Box>
-          <object data="control_loop.svg" width={900} />
+          <object data="control_loop.svg" />
         </Box>
       </Popover>
     </Card>

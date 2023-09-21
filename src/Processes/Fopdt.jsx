@@ -52,7 +52,9 @@ export default class {
       The dead time (or time delay) is expressed as a time shift in the input variable <InlineMath>{`u(t)`}</InlineMath>.
       <BlockMath>{`u(t-\\theta_p)`}</BlockMath>
     </Typography>
-    <Typography><Link href='https://apmonitor.com/pdc/index.php/Main/FirstOrderSystems' target='_blank' rel='noopener'>Source</Link></Typography>
+    <Typography sx={{ textAlign: 'right' }}>
+      <Link href='https://apmonitor.com/pdc/index.php/Main/FirstOrderSystems' target='_blank' rel='noopener'>Source</Link>
+    </Typography>
   </>
 
   static paramDefinitions = [

@@ -53,7 +53,9 @@ export default class {
     <Typography sx={{ mt: 2 }}>
     <InlineMath>{`\\omega_n`}</InlineMath> is the undamped natural frequency and <InlineMath>{`\\zeta`}</InlineMath> is the damping ratio.
     </Typography>
-    <Typography><Link href='https://en.wikipedia.org/wiki/Mass-spring-damper_model' target='_blank' rel='noopener'>Source</Link></Typography>
+    <Typography sx={{ textAlign: 'right' }}>
+      <Link href='https://en.wikipedia.org/wiki/Mass-spring-damper_model' target='_blank' rel='noopener'>Source</Link>
+    </Typography>
   </>
 
   static paramDefinitions = [
