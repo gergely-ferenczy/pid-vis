@@ -14,7 +14,7 @@ export default function SimulationConfigBox(props) {
 
   return (
     <Card>
-      <CardHeader title={<Typography>Simulation configuration</Typography>} />
+      <CardHeader title={<Typography>Simulation</Typography>} />
       <CardContent>
         <Box sx={{
           display: 'grid',

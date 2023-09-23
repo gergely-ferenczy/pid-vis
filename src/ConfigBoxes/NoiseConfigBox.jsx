@@ -12,7 +12,7 @@ export default function SimulationConfigBox(props) {
 
   return (
     <Card>
-      <CardHeader title={<Typography>Noise configuration</Typography>} />
+      <CardHeader title={<Typography>Noise</Typography>} />
       <CardContent>
         <Box sx={{
           display: 'grid',

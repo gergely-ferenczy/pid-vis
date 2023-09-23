@@ -25,7 +25,7 @@ export default class {
 
   static info =
   <>
-    <Typography>
+    <Typography sx={{ mt: 2 }}>
       A first-order linear system with time delay is a common empirical description of many stable dynamic processes.
       It has three configurable variables, the gain <InlineMath>{`K_p`}</InlineMath>, time constant&nbsp;
       <InlineMath>{`\\tau_p`}</InlineMath> and dead time <InlineMath>{`\\theta_p`}</InlineMath>.
@@ -33,7 +33,7 @@ export default class {
     <BlockMath>
       {`\\tau_p \\ \\dot{y}(t) + y(t) = K_p u(t - \\theta_p)`}
     </BlockMath>
-    <Typography variant='h6' sx={{ mt: 2 }}>Gain</Typography>
+    <Typography variant='h6' sx={{ mt: 2 }}>Gain - <InlineMath>{`K_p`}</InlineMath></Typography>
     <Typography>
       The process gain is the change in the output <InlineMath>y</InlineMath> induced by a unit change in the input <InlineMath>u</InlineMath>.
       The process gain is calculated by evaluating the change in <InlineMath>y(t)</InlineMath> divided by the change in <InlineMath>u(t)</InlineMath>
@@ -41,13 +41,13 @@ export default class {
     </Typography>
     <BlockMath>{`K_p = \\frac{\\Delta y}{\\Delta u} = \\frac{y_{ss_2} - y_{ss_1}}{u_{ss_2} - u_{ss_1}}`}</BlockMath>
     <Typography>The process gain affects the magnitude of the response, regardless of the speed of response.</Typography>
-    <Typography variant='h6' sx={{ mt: 2 }}>Time constant</Typography>
+    <Typography variant='h6' sx={{ mt: 2 }}>Time constant - <InlineMath>{`\\tau_p`}</InlineMath></Typography>
     <Typography>
       The process time constant is the amount of time needed for the output to reach
       <InlineMath>{`(1 - e^{-1})`}</InlineMath> or <InlineMath>{`63.2\\%`}</InlineMath> of the way to steady state conditions.
       The process time constant affects the speed of response.
     </Typography>
-    <Typography variant='h6' sx={{ mt: 2 }}>Dead time</Typography>
+    <Typography variant='h6' sx={{ mt: 2 }}>Dead time - <InlineMath>{`\\theta_p`}</InlineMath></Typography>
     <Typography>
       The dead time (or time delay) is expressed as a time shift in the input variable <InlineMath>{`u(t)`}</InlineMath>.
       <BlockMath>{`u(t-\\theta_p)`}</BlockMath>
@@ -61,7 +61,6 @@ export default class {
     {
       name: 'Kp',
       title: 'K_p',
-      description: 'Gain',
       min: 0.1,
       max: 10.0,
       step: 0.1
@@ -69,7 +68,6 @@ export default class {
     {
       name: 'Tp',
       title: '\\tau_p',
-      description: 'Time constant',
       min: 0.0,
       max: 10.0,
       step: 0.1
@@ -77,7 +75,6 @@ export default class {
     {
       name: 'd',
       title: '\\theta_p',
-      description: 'Time delay',
       min: 0.0,
       max: 10.0,
       step: 0.1

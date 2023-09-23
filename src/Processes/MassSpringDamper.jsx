@@ -34,7 +34,7 @@ export default class {
 
   static info =
   <>
-    <Box sx={{ mb: 2, display: 'grid', gridTemplateColumns: 'auto auto' }}>
+    <Box sx={{ mt: 2, mb: 2, display: 'grid', gridTemplateColumns: 'auto auto' }}>
       <Typography>
         The mass-spring-damper model consists of discrete mass nodes distributed throughout an object and
         interconnected via a network of springs and dampers. This model is well-suited for modelling objects
@@ -62,7 +62,6 @@ export default class {
     {
       name: 'F',
       title: 'F',
-      description: 'External force',
       min: 0.1,
       max: 10.0,
       step: 0.1
@@ -70,7 +69,6 @@ export default class {
     {
       name: 'k',
       title: 'k',
-      description: 'Spring constant',
       min: 0.1,
       max: 10.0,
       step: 0.1
@@ -78,7 +76,6 @@ export default class {
     {
       name: 'c',
       title: 'c',
-      description: 'Damping coefficient',
       min: 0.0,
       max: 10.0,
       step: 0.1
@@ -86,7 +83,6 @@ export default class {
     {
       name: 'm',
       title: 'm',
-      description: 'Mass',
       min: 0.1,
       max: 10.0,
       step: 0.1

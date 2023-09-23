@@ -41,23 +41,17 @@ export default function SimulationConfigBox(props) {
         action={
           <IconButton onClick={handleControllerInfoOpen}><InfoIcon /></IconButton>
         }
-        title={<Typography>Controller configuration</Typography>}
+        title={<Typography>Controller</Typography>}
       />
       <CardContent>
+        <object data="control_loop2.svg" style={{ width: '100%' }}/>
+        <Divider sx={{ my: 1 }} />
         <Box sx={{
           display: 'grid',
           gridTemplateColumns: 'min-content 1fr',
           columnGap: 1,
           alignItems: 'center'
         }}>
-          <Box><InlineMath>K_c</InlineMath></Box>
-          <InputSlider min={0.0} max={10.0} step={0.1} value={controllerParams.Kp} onChange={onKcChange} />
-          <Box><InlineMath>\tau_i</InlineMath></Box>
-          <InputSlider min={0.0} max={10.0 / controllerParams.Kp} step={0.1} value={Ti} onChange={onTiChange} />
-          <Box><InlineMath>\tau_d</InlineMath></Box>
-          <InputSlider min={0.0} max={10.0 / controllerParams.Kp} step={0.1} value={Td} onChange={onTdChange} />
-
-          <Divider sx={{ gridColumn: '1 / span 2', my: 1 }} />
 
           <Box><InlineMath>K_p</InlineMath></Box>
           <InputSlider min={0.0} max={10.0} step={0.1} value={controllerParams.Kp} onChange={onKpChange} />
@@ -87,7 +81,7 @@ export default function SimulationConfigBox(props) {
       >
         <Box sx={{ p: 2, width: 'min-content' }}>
           <Typography variant="h5">Controller Description</Typography>
-          <Typography>
+          <Typography sx={{ mt: 2 }}>
             A proportional–integral–derivative controller (PID) is a control loop mechanism employing feedback that is
             widely used in industrial control systems and a variety of other applications requiring continuously modulated
             control. A PID controller continuously calculates an error value (<InlineMath>e(t)</InlineMath>) as the
@@ -118,16 +112,16 @@ export default function SimulationConfigBox(props) {
           <BlockMath>{`e_k = r_k - y_k`}</BlockMath>
           <Typography>
             For practical purposes, this example only describes the discrete PID equation, as this is what will
-            ultimately be implemented in code. The controller equation has two typical forms, which are equal in
-            output, but the parameters are structured a bit differently. In the interactive example, both versions
-            can be experimented with simultaneously.
+            ultimately be implemented in code. The controller equation has multiple forms, which are equal in
+            output, but the parameters are structured a bit differently. In the interactive example all versions
+            can be experimented with.
           </Typography>
           <BlockMath>
             {`
               \\begin{array}{l}
                 \\begin{aligned}
                 u_k &= K_p \\cdot e_k + K_i \\sum_{i=1}^{k} e_i - K_d \\left(y_k-y_{k-1} \\right) & (1)\\\\
-                u_k &= K_c \\left(e_k + T_i \\sum_{i=1}^{k} e_i - T_d \\left(y_k-y_{k-1} \\right) \\right) & (2) \\\\\\\\
+                u_k &= K_c \\left(e_k + K_i \\sum_{i=1}^{k} e_i - K_d \\left(y_k-y_{k-1} \\right) \\right) & (2) \\\\\\\\
                 \\end{aligned}\\\\
                 \\text{Where}
               \\end{array}
@@ -158,7 +152,7 @@ export default function SimulationConfigBox(props) {
               `}
             </BlockMath>
           </Box>
-          <object data="control_loop.svg" />
+          <object data="control_loop2.svg" />
         </Box>
       </Popover>
     </Card>

@@ -30,7 +30,7 @@ export default class {
 
   static info =
   <>
-    <Typography>
+    <Typography sx={{ mt: 2 }}>
       A second-order linear system is a common description of many dynamic processes. The response depends
       on whether it is an overdamped, critically damped, or underdamped second order system.
       It has four configurable variables, the gain <InlineMath>{`K_p`}</InlineMath>, time constant&nbsp;
@@ -40,7 +40,7 @@ export default class {
     <BlockMath>
       {`\\tau_s^2 \\ddot{y} + 2 \\zeta \\tau_s \\dot{y} + y = K_p u(t - \\theta_p)`}
     </BlockMath>
-    <Typography variant='h6' sx={{ mt: 2 }}>Gain</Typography>
+    <Typography variant='h6' sx={{ mt: 2 }}>Gain - <InlineMath>{`K_p`}</InlineMath></Typography>
     <Typography>
       The process gain is the change in the output <InlineMath>y</InlineMath> induced by a unit change in the input <InlineMath>u</InlineMath>.
       The process gain is calculated by evaluating the change in <InlineMath>y(t)</InlineMath> divided by the change in <InlineMath>u(t)</InlineMath>
@@ -48,18 +48,18 @@ export default class {
     </Typography>
     <BlockMath>{`K_p = \\frac{\\Delta y}{\\Delta u} = \\frac{y_{ss_2} - y_{ss_1}}{u_{ss_2} - u_{ss_1}}`}</BlockMath>
     <Typography>The process gain affects the magnitude of the response, regardless of the speed of response.</Typography>
-    <Typography variant='h6' sx={{ mt: 2 }}>Time constant</Typography>
+    <Typography variant='h6' sx={{ mt: 2 }}>Time constant - <InlineMath>{`\\tau_s`}</InlineMath></Typography>
     <Typography>
       The second order process time constant is the speed that the output response reaches a new steady state condition.
       The process time constant affects the speed of response.
     </Typography>
-    <Typography variant='h6' sx={{ mt: 2 }}>Damping ratio</Typography>
+    <Typography variant='h6' sx={{ mt: 2 }}>Damping ratio - <InlineMath>{`\\zeta`}</InlineMath></Typography>
     <Typography>
       The response of the second order system to a step input in <InlineMath>{`u(t)`}</InlineMath> depends whether the system is
       overdamped <InlineMath>{`(\\zeta > 1)`}</InlineMath>, critically damped <InlineMath>{`(\\zeta = 1)`}</InlineMath>,
       or underdamped <InlineMath>{`(0 \\leq \\zeta < 1)`}</InlineMath>.
     </Typography>
-    <Typography variant='h6' sx={{ mt: 2 }}>Dead time</Typography>
+    <Typography variant='h6' sx={{ mt: 2 }}>Dead time - <InlineMath>{`\\theta_p`}</InlineMath></Typography>
     <Typography>
       The dead time (or time delay) is expressed as a time shift in the input variable <InlineMath>{`u(t)`}</InlineMath>.
       <BlockMath>{`u(t-\\theta_p)`}</BlockMath>
@@ -81,7 +81,6 @@ export default class {
     {
       name: 'Ts',
       title: '\\tau_s',
-      description: 'Time constant',
       min: 0.0,
       max: 10.0,
       step: 0.1
@@ -89,7 +88,6 @@ export default class {
     {
       name: 'Z',
       title: '\\zeta',
-      description: 'Damping ratio',
       min: 0.0,
       max: 10.0,
       step: 0.1
@@ -97,7 +95,6 @@ export default class {
     {
       name: 'd',
       title: '\\theta_p',
-      description: 'Time delay',
       min: 0.0,
       max: 10.0,
       step: 0.1

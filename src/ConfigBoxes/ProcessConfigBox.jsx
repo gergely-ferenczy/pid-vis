@@ -50,7 +50,7 @@ export default function SimulationConfigBox(props) {
             <IconButton onClick={handleProcessConfigOpen}><MoreVertIcon /></IconButton>
           </>
         }
-        title={<Typography>Process configuration</Typography>}
+        title={<Typography>Process</Typography>}
         subheader={processVariants[processId].title}
       />
       <CardContent>
@@ -81,7 +81,7 @@ export default function SimulationConfigBox(props) {
         onClose={handleProcessInfoClose}
       >
         <Box sx={{ p: 2, width: 700 }}>
-          <Typography variant="h5">Controller Description</Typography>
+          <Typography variant="h5">Process Description</Typography>
           { processVariants[processId].info }
         </Box>
       </Popover>
