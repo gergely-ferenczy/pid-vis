@@ -40,7 +40,7 @@ export default class {
         interconnected via a network of springs and dampers. This model is well-suited for modelling objects
         with complex material properties such as nonlinearity and viscoelasticity.
       </Typography>
-      <Box sx={{ mt: '-10px' }}><object data="mass_spring_damper.svg" /></Box>
+      <Box sx={{ mt: '-10px' }}><img src="mass_spring_damper.svg" /></Box>
     </Box>
     <Typography>Sum of forces applied on the mass:</Typography>
     <Typography><InlineMath>{`F_s = -k x`}</InlineMath> is the spring force, where <InlineMath>k</InlineMath> is the spring constant.</Typography>
@@ -98,6 +98,7 @@ export default class {
       Kp: 0.1,
       Ki: 3.5,
       Kd: 1.5,
+      dkp: true,
       i_min: -10.0,
       i_max: 10.0,
       u_min: -10.0,

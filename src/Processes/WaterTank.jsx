@@ -46,7 +46,7 @@ export default class {
           </BlockMath>
         </Box>
       </Box>
-      <Box><object data="water_tank.svg" /></Box>
+      <Box><img src="water_tank.svg" /></Box>
     </Box>
   </>
 
@@ -82,6 +82,7 @@ export default class {
       Kp: 0.4,
       Ki: 0.0,
       Kd: 0.0,
+      dkp: true,
       i_min: 0.0,
       i_max: 1.0,
       u_min: 0.0,

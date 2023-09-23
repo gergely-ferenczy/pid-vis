@@ -32,7 +32,7 @@ export default function SimulationConfigBox(props) {
           <InputSlider min={0.01} max={1.0} step={0.01} value={simulationParams.samplingTime} onChange={onSamplingTimeChange} />
           <Box>
             <FormControlLabel
-              control={<Checkbox checked={simulationParams.stepReturn} onChange={onStepReturnChange} />}
+              control={<Checkbox size="small" checked={simulationParams.stepReturn} onChange={onStepReturnChange} />}
               label={<InlineMath>t_&#123;step&#125;</InlineMath>}
             />
           </Box>

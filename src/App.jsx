@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CssBaseline, Box } from '@mui/material';
+import { CssBaseline, Box, Paper } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import Alea from 'alea'
 import Plotter from "./Plotter";
@@ -27,20 +27,22 @@ function step(t, rt, st) {
 
 function pid(simulationParams, controllerParams, controllerState, r, y) {
   const { samplingTime: ts } = simulationParams;
-  const { Kp, Ki, Kd } = controllerParams;
-  const { ei: ei_prev, y: y_prev } = controllerState;
+  const { Kp, Ki, Kd, dkp } = controllerParams;
+  const { ei: ei_prev, e: e_prev, y: y_prev } = controllerState;
 
   const e = r - y;
   const ei = ei_prev + e;
+  const ed = e - e_prev;
   const yd = y - y_prev;
   const p = Kp * e;
   const i = Math.min(Math.max(Ki * ts * ei, controllerParams.i_min), controllerParams.i_max);
-  const d = -Kd / ts * yd;
+  const d = dkp ? -Kd / ts * yd : Kd / ts * ed;
   const u = Math.min(Math.max(p + i + d, controllerParams.u_min), controllerParams.u_max);
   controllerState.ei = ei;
+  controllerState.e = e;
   controllerState.y = y;
   controllerState.u = u;
-  return { u, p, i, d };
+  return { u, p, i, d, e };
 }
 
 const ProcessVariants = [ Fopdt, Sopdt, WaterTank, MassSpringDamper ];
@@ -60,7 +62,9 @@ function App() {
   const [processId, setProcessId] = useState(0);
   const [processParams, setProcessParams] = useState(ProcessVariants[processId].defaultParams);
 
-  const [controllerParams, setControllerParams] = useState(processParams.control);
+  const [controllerParams, setControllerParams] = useState({
+    ...processParams.control
+  });
 
   const [processData, setProcessData] = useState(generateProcessData(simulationParams, processId, processParams));
   const [controllerData, setControllerData] = useState(generateControllerData(simulationParams, processId, processParams, controllerParams));
@@ -85,7 +89,7 @@ function App() {
   }
 
   function generateControllerData(simulationParams, processId, processParams, controllerParams) {
-    const controllerState = { ei: 0, y: 0, u: 0 };
+    const controllerState = { ei: 0, e: 0, y: 0, u: 0 };
 
     const { simulationTime: st, samplingTime: dt, noise: nc, filter: fa } = simulationParams;
     const ticks =  Array(Math.round((1.05 * st)/dt + 1)).fill().map((_, i) => -0.05 * st + dt * i);
@@ -95,6 +99,7 @@ function App() {
     const filter = new FolpFilter({ a: fa}, dt);
 
     const targetReference = Array(ticks.length);
+    const error = Array(ticks.length);
     const controllerOutput = Array(ticks.length);
     const pOutput = Array(ticks.length);
     const iOutput = Array(ticks.length);
@@ -108,9 +113,10 @@ function App() {
       const yn = y + n;
       const ynf = filter.tf(yn);
       const r = step(t, simulationParams.stepReturn, simulationParams.stepTime);
-      const { u, p, i, d } = pid(simulationParams, controllerParams, controllerState, r, ynf);
+      const { u, p, i, d, e } = pid(simulationParams, controllerParams, controllerState, r, ynf);
 
       targetReference[k] = { x: t, y: r };
+      error[k] = { x: t, y: e };
       controllerOutput[k] = { x: t, y: u };
       processResponse[k] = { x: t, y: y };
       processResponseWithNoise[k] = { x: t, y: yn };
@@ -127,6 +133,7 @@ function App() {
         { label: 'u', data: controllerOutput },
         { label: 'y', data: processResponse },
         { label: 'y+n', data: processResponseWithNoise, hidden: true },
+        { label: 'e', data: error, hidden: true },
         { label: 'p', data: pOutput, hidden: true },
         { label: 'i', data: iOutput, hidden: true },
         { label: 'd', data: dOutput, hidden: true }
@@ -195,35 +202,6 @@ function App() {
     updateData(newSimulationParams, processId, processParams, controllerParams);
   }
 
-  function onKcChange(event, newValue) {
-    const newControllerParams = {
-      ...controllerParams,
-      Kp: newValue,
-      Ki: controllerParams.Ki / controllerParams.Kp * newValue || 0.0,
-      Kd: controllerParams.Kd / controllerParams.Kp * newValue || 0.0
-    };
-    setControllerParams(newControllerParams);
-    updateData(simulationParams, processId, processParams, newControllerParams);
-  }
-
-  function onTiChange(event, newValue) {
-    const newControllerParams = {
-      ...controllerParams,
-      Ki: newValue * controllerParams.Kp
-    };
-    setControllerParams(newControllerParams);
-    updateData(simulationParams, processId, processParams, newControllerParams);
-  }
-
-  function onTdChange(event, newValue) {
-    const newControllerParams = {
-      ...controllerParams,
-      Kd: newValue * controllerParams.Kp
-    };
-    setControllerParams(newControllerParams);
-    updateData(simulationParams, processId, processParams, newControllerParams);
-  }
-
   function onKpChange(event, newValue) {
     const newControllerParams = {
       ...controllerParams,
@@ -246,6 +224,15 @@ function App() {
     const newControllerParams = {
       ...controllerParams,
       Kd: newValue
+    };
+    setControllerParams(newControllerParams);
+    updateData(simulationParams, processId, processParams, newControllerParams);
+  }
+
+  function onDKPChange(event, newValue) {
+    const newControllerParams = {
+      ...controllerParams,
+      dkp: newValue
     };
     setControllerParams(newControllerParams);
     updateData(simulationParams, processId, processParams, newControllerParams);
@@ -320,19 +307,23 @@ function App() {
           display: 'grid',
           gridAutoFlow: 'column',
           gridTemplateColumns: '1fr 1fr',
-          gridTemplateRows: 'auto auto auto',
+          gridTemplateRows: 'auto auto auto auto',
           alignContent: 'start',
           alignItems: 'start',
           gap: 1
         }}>
+          <Paper sx={{ gridColumn: 'span 2', px: 2, py: 1 }}>
+            <img src={controllerParams.dkp ? 'control_loop2.svg' : 'control_loop1.svg'} style={{ width: '100%' }}/>
+          </Paper>
           <SimulationConfigBox simulationParams={simulationParams} onSimulationTimeChange={onSimulationTimeChange}
             onSamplingTimeChange={onSamplingTimeChange} onStepReturnChange={onStepReturnChange} onStepTimeChange={onStepTimeChange} />
           <ProcessConfigBox processVariants={ProcessVariants} processId={processId} processParams={processParams}
             onProcessChange={onProcessChange} onProcessVarChange={onProcessVarChange} />
           <NoiseConfigBox simulationParams={simulationParams} onNoiseChange={onNoiseChange} onFilterChange={onFilterChange} />
-          <ControllerConfigBox controllerParams={controllerParams} onKcChange={onKcChange} onTiChange={onTiChange} onTdChange={onTdChange}
-            onKpChange={onKpChange} onKiChange={onKiChange} onKdChange={onKdChange} onIminChange={onIminChange} onImaxChange={onImaxChange}
-            onUminChange={onUminChange} onUmaxChange={onUmaxChange} />
+          <ControllerConfigBox  sx={{ gridRow: 'span 2' }}
+            controllerParams={controllerParams} onKpChange={onKpChange} onKiChange={onKiChange} onKdChange={onKdChange}
+            onDKPChange={onDKPChange} onIminChange={onIminChange} onImaxChange={onImaxChange} onUminChange={onUminChange}
+            onUmaxChange={onUmaxChange} />
         </Box>
         <Box sx={{
           minWidth: '600px',

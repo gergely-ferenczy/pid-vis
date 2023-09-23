@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { InlineMath, BlockMath } from 'react-katex';
 import { Box, Typography, Card, CardHeader, CardContent, IconButton, Divider, Input,
-         Popover, Link } from '@mui/material';
+         Popover, Link, FormControlLabel, Checkbox } from '@mui/material';
 import { InfoOutlined as InfoIcon } from '@mui/icons-material';
 import InputSlider from '../InputSlider';
 
@@ -9,16 +9,16 @@ export default function SimulationConfigBox(props) {
 
   const {
     controllerParams,
-    onKcChange,
-    onTiChange,
-    onTdChange,
     onKpChange,
     onKiChange,
     onKdChange,
+    onDKPChange,
     onIminChange,
     onImaxChange,
     onUminChange,
-    onUmaxChange
+    onUmaxChange,
+
+    sx
   } = props;
 
   const Ti = (controllerParams.Kp != 0.0) ? controllerParams.Ki / controllerParams.Kp : 0.0;
@@ -36,7 +36,7 @@ export default function SimulationConfigBox(props) {
   }
 
   return (
-    <Card sx={{ gridArea: '1/2/4/2' }}>
+    <Card sx={sx}>
       <CardHeader
         action={
           <IconButton onClick={handleControllerInfoOpen}><InfoIcon /></IconButton>
@@ -44,7 +44,12 @@ export default function SimulationConfigBox(props) {
         title={<Typography>Controller</Typography>}
       />
       <CardContent>
-        <object data="control_loop2.svg" style={{ width: '100%' }}/>
+        <Box>
+            <FormControlLabel
+              control={<Checkbox size="small" checked={controllerParams.dkp} onChange={onDKPChange} />}
+              label={'Derivative kickback prevention'}
+            />
+          </Box>
         <Divider sx={{ my: 1 }} />
         <Box sx={{
           display: 'grid',
@@ -152,7 +157,7 @@ export default function SimulationConfigBox(props) {
               `}
             </BlockMath>
           </Box>
-          <object data="control_loop2.svg" />
+          <img src="control_loop2.svg" />
         </Box>
       </Popover>
     </Card>

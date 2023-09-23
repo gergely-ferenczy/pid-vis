@@ -89,6 +89,7 @@ export default class {
       Kp: 0.4,
       Ki: 0.52,
       Kd: 0.0,
+      dkp: true,
       i_min: -10.0,
       i_max: 10.0,
       u_min: -10.0,
