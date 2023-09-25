@@ -87,7 +87,7 @@ export default class {
     d: 1.0,
     control: {
       Kp: 0.4,
-      Ki: 0.52,
+      Ki: 0.5,
       Kd: 0.0,
       dkp: true,
       i_min: -10.0,

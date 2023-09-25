@@ -25,7 +25,7 @@ export default function SimulationConfigBox(props) {
           <Box>
             <InlineMath>t_&#123;sim&#125;</InlineMath>
           </Box>
-          <InputSlider min={0.1} max={100.0} step={0.1} value={simulationParams.simulationTime} onChange={onSimulationTimeChange} />
+          <InputSlider min={1} max={100.0} step={1} value={simulationParams.simulationTime} onChange={onSimulationTimeChange} />
           <Box>
             <InlineMath>t_&#123;sample&#125;</InlineMath>
           </Box>
