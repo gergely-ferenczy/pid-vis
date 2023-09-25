@@ -15,7 +15,6 @@ export default class {
 
   tf(u) {
     const { ci, co, A, dt, u: u_prev, y: y_prev } = this;
-    u = Math.min(Math.max(u, 0.0), 1.0);
     const y = Math.max((ci * (u + u_prev) / 2 - co) / 1000 / A * dt + y_prev, 0.0);
     this.y = y;
     this.u = u;
@@ -68,16 +67,16 @@ export default class {
     {
       name: 'A',
       title: 'A',
-      min: 0.01,
-      max: 0.04,
-      step: 0.01
+      min: 0.1,
+      max: 0.4,
+      step: 0.1
     }
   ];
 
   static defaultParams = {
     ci: 10.0,
     co: 0.0,
-    A: 0.01,
+    A: 0.1,
     control: {
       Kp: 0.4,
       Ki: 0.0,
