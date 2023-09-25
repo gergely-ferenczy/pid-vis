@@ -31,11 +31,11 @@ function pid(simulationParams, controllerParams, controllerState, r, y) {
   const { ei: ei_prev, e: e_prev, y: y_prev } = controllerState;
 
   const e = r - y;
-  const ei = ei_prev + e;
+  const ei = ei_prev + Ki * ts * e;
   const ed = e - e_prev;
   const yd = y - y_prev;
   const p = Kp * e;
-  const i = Math.min(Math.max(Ki * ts * ei, controllerParams.i_min), controllerParams.i_max);
+  const i = Math.min(Math.max(ei, controllerParams.i_min), controllerParams.i_max);
   const d = dkp ? -Kd / ts * yd : Kd / ts * ed;
   const u = Math.min(Math.max(p + i + d, controllerParams.u_min), controllerParams.u_max);
   controllerState.ei = ei;

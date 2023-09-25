@@ -84,7 +84,7 @@ export default function SimulationConfigBox(props) {
         open={controllerInfoOpen}
         onClose={handleControllerInfoClose}
       >
-        <Box sx={{ p: 2, width: 'min-content' }}>
+        <Box sx={{ p: 2, width: '700px' }}>
           <Typography variant="h5">Controller Description</Typography>
           <Typography sx={{ mt: 2 }}>
             A proportional–integral–derivative controller (PID) is a control loop mechanism employing feedback that is
@@ -106,58 +106,72 @@ export default function SimulationConfigBox(props) {
               Source2
             </Link>
           </Typography>
-          <Typography sx={{ mt: 2 }}>
-            The controller used in this example is slightly modified compared to the standard examples. It uses the
-            process variable directly instead of the error value to calculate the derivative term to avoid kickback.
-            It also has configurable saturation elements for the integral term and the controller output.
-          </Typography>
-          <Typography sx={{ mt: 2 }}>
+          <Typography>Continous PID equation in standard form:</Typography>
+          <BlockMath>{`u(t) = K_p \\ e(t) + K_i \\int_{0}^{t} e(t) + K_d \\frac{d}{dt} e(t)`}</BlockMath>
+          <Typography>
             The error value is obtained by:
           </Typography>
-          <BlockMath>{`e_k = r_k - y_k`}</BlockMath>
+          <BlockMath>{`e(t) = r(t) - y(t)`}</BlockMath>
           <Typography>
-            For practical purposes, this example only describes the discrete PID equation, as this is what will
-            ultimately be implemented in code. The controller equation has multiple forms, which are equal in
-            output, but the parameters are structured a bit differently. In the interactive example all versions
-            can be experimented with.
+            This demonstration implements the discretized parallel (ideal) form of the PID controller.
           </Typography>
           <BlockMath>
             {`
               \\begin{array}{l}
-                \\begin{aligned}
-                u_k &= K_p \\cdot e_k + K_i \\sum_{i=1}^{k} e_i - K_d \\left(y_k-y_{k-1} \\right) & (1)\\\\
-                u_k &= K_c \\left(e_k + K_i \\sum_{i=1}^{k} e_i - K_d \\left(y_k-y_{k-1} \\right) \\right) & (2) \\\\\\\\
-                \\end{aligned}\\\\
-                \\text{Where}
+                u_k = K_p \\ e_k + K_i \\ t_s \\sum_{j=0}^{k} e_j - \\frac{K_d}{t_s} \\left(e_k-e_{k-1} \\right) \\qquad\\qquad\\qquad\\quad
               \\end{array}
             `}
           </BlockMath>
+          <Typography>
+            Where
+          </Typography>
           <Box className={'katex-small'}>
             <BlockMath>
               {`
                 \\begin{array}{ll}
                   \\begin{aligned}
-                    & K_P && \\text{Proportional gain.} \\quad \\\\
-                    & K_i && \\text{Integral gain.}     \\quad \\\\
-                    & K_d && \\text{Derivative gain.}   \\quad \\\\
+                    & u_k && \\text{Controller output.}                       \\quad \\\\
+                    & y_k && \\text{Process variable, output of the system.}  \\quad \\\\
+                    & r_k && \\text{Reference point, target value.}           \\quad \\\\
+                    & e_k && \\text{Calculated error.}
                   \\end{aligned}
                   \\begin{aligned}
-                    & K_c && \\text{Global controller gain.} \\\\
-                    & \\tau_i && \\text{Integral time constant.} \\\\
-                    & \\tau_d && \\text{Derivative time constant.}
+                    & K_P && \\text{Proportional gain.} \\\\
+                    & K_i && \\text{Integral gain.}     \\\\
+                    & K_d && \\text{Derivative gain.}   \\\\
+                    & \\
                   \\end{aligned}
-                \\end{array} \\\\
-                \\begin{aligned}
-                  \\\\
-                  & u_k && \\text{Controller output.} \\\\
-                  & y_k && \\text{Process variable, output of the system.}\\\\
-                  & r_k && \\text{Reference point, target value.} \\\\
-                  & e_k && \\text{Calculated error.}
-                \\end{aligned}
+                \\end{array}
               `}
             </BlockMath>
           </Box>
-          <img src="control_loop2.svg" />
+          <Typography sx={{ mb: 2 }}>
+            The controller used in this demonstration is slightly modified compared to the standard examples.
+            <ul>
+              <li>
+                The derivative term can use both the calculated error and the process variable directly as its input. Using the process
+                variable eliminates the issue commonly known as derivative kickback.
+              </li>
+              <li>
+                The controller also has configurable saturation elements for the integral term and the controller output. This helps
+                create more realistic configurations, where for example the output of the controller is limited by some kind of real
+                life parameter.
+              </li>
+              <li>
+                The integral term is accumulated after the multiplication with the integral gain. This way, if the integral gain
+                is changed during the operation of the controller, the gain used for the already accumulated integral error will
+                not change, the new gain value will only apply to new error samples.
+              </li>
+            </ul>
+            The complete implementation in mathematical form:
+          </Typography>
+          <BlockMath>
+            {`
+              \\begin{array}{l}
+                u_k = sat_{u_{min}}^{u_{max}}\\left(K_p \\ e_k + sat_{i_{min}}^{i_{max}}\\left(\\sum_{j=0}^{k} K_i \\ t_s \\ e_j \\right) - \\frac{K_d}{t_s} \\left(y_k-y_{k-1} \\right)\\right)
+              \\end{array}
+            `}
+          </BlockMath>
         </Box>
       </Popover>
     </Card>
