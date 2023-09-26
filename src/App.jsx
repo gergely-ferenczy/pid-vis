@@ -77,7 +77,7 @@ function App() {
     const process = new ProcessVariants[processId](processParams, simulationParams.samplingTime);
 
     const result = {
-      title: 'Open loop response',
+      title: 'Open Loop Response',
       limits: { min: ticks[0], max: ticks[ticks.length] },
       datasets: [
         { label: 'Input', data: stepData },
@@ -126,7 +126,7 @@ function App() {
     });
 
     const result = {
-      title: 'Closed loop response',
+      title: 'Closed Loop Response',
       limits: { min: ticks[0], max: ticks[ticks.length] },
       datasets: [
         { label: 'r', data: targetReference },
