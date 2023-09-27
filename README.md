@@ -1,8 +1,24 @@
-# React + Vite
+# PidVis
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A PID controller visualization and demonstration tool.
 
-Currently, two official plugins are available:
+[LIVE DEMO](https://gergely-ferenczy.github.io/PidVis/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Capabilities
+
+4 different process model examples with interactive controls:
+* First order plus dead time (FOPDT)
+* Second order plus dead time (SOPDT)
+* Water tank level
+* Mass spring damper
+
+Adjustable controller parameters and saturation values.
+
+Togglable derivative kickback prevention.
+
+## Installation and usage
+
+```
+npm install
+npm run dev
+```
