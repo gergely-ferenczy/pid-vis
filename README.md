@@ -2,7 +2,7 @@
 
 A PID controller visualization and demonstration tool.
 
-[LIVE DEMO](https://gergely-ferenczy.github.io/PidVis/)
+[LIVE DEMO](https://gergely-ferenczy.github.io/pid-vis/)
 
 ## Capabilities
 
